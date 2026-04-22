@@ -1,0 +1,29 @@
+{
+  "name": "m7_gen_ia_exercicios",
+  "version": "1.0.0",
+  "description": "Exercícios de Laboratórios do Modulo 7 - GEN IA",
+  "main": "index.js",
+  "scripts": {
+    "start": "node --env-file=.env \"./Exemplos de Slides/Aula_01/index.js\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dsanches06/M7_GEN_IA_Exercicios.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/dsanches06/M7_GEN_IA_Exercicios/issues"
+  },
+  "homepage": "https://github.com/dsanches06/M7_GEN_IA_Exercicios#readme",
+  "dependencies": {
+    "@google/genai": "^1.50.1",
+    "dotenv": "^17.4.2",
+    "nodemon": "^3.1.14"
+  }
+}
+
+
