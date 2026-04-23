@@ -4,7 +4,9 @@
   "description": "Exercícios de Laboratórios do Modulo 7 - GEN IA",
   "main": "index.js",
   "scripts": {
-    "start": "node --env-file=.env \"./Exemplos de Slides/Aula_02/index.js\"",
+    "//": "node --env-file=.env \"./Exemplos de Slides/Aula_01/index.js\"",
+    "//": "node --env-file=.env \"./Exemplos de Slides/Aula_02/index.js\"",
+    "start": "node --env-file=.env \"./Exercicios Guiados/guiados_01/index.js\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -25,5 +27,3 @@
     "nodemon": "^3.1.14"
   }
 }
-
-
