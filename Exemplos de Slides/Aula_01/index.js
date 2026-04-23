@@ -10,10 +10,10 @@ const ai = new GoogleGenAI({
 async function main() {
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
-    contents: "Explain how AI works in a few words",
+    contents: "Explain how AI works in a few words in portuguese",
   });
   console.log("\n--- Answer ---");
   console.log(response.text);
 }
 
-main();
+await main();
