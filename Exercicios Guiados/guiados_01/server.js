@@ -8,6 +8,7 @@ import {
 } from "./index.js";
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
@@ -17,7 +18,7 @@ app.post("/api/tasks/create", async (req, res) => {
     const { text } = req.body;
 
     const task = await createTaskFromText({ text });
-    
+
     res.status(2001).json({ success: true, task });
   } catch (error) {
     console.error(error);
@@ -61,6 +62,6 @@ app.post("/api/tasks/suggest-tags", async (req, res) => {
   }
 });
 
-app.listen(3000, () => {
-  console.log("Servidor a correr na porta 3000");
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
