@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exercícios Guiados 02 - Prompt Engineering V3</title>
+<style>
+body{font-family:Segoe UI,Tahoma,sans-serif;max-width:1150px;margin:auto;padding:40px;background:#f8fafc;color:#1e293b;line-height:1.6}
+h1{font-size:34px;color:#0f172a}h2{margin-top:40px;color:#0f172a}.badge{display:inline-block;background:#0ea5e9;color:#fff;padding:6px 12px;border-radius:999px;font-size:12px;margin:12px 0 20px}.card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:24px;margin:18px 0;box-shadow:0 8px 24px rgba(0,0,0,.05)}pre,code{background:#0f172a;color:#e2e8f0;border-radius:10px}pre{padding:14px;overflow:auto}code{padding:3px 6px}.tip{background:#ecfeff;border-left:4px solid #06b6d4;padding:12px;border-radius:10px;margin-top:12px}.goal{background:#f0fdf4;border-left:4px solid #22c55e;padding:12px;border-radius:10px;margin-top:12px}ul{padding-left:20px}
+</style>
+</head>
+<body>
+<h1>Exercícios Guiados 02 — Prompt Engineering </h1>
+<p>Objetivo global: construir em JavaScript funções reais para um assistente de produtividade integrado com ClickUp.</p>
+
+
+<h2>🧠 Parte 1 — Prompt Engineering</h2>
+<div class="card">
+<h3>Exercício 1 — Função createSystemPrompt()</h3>
+<p><b>Tarefa:</b> Criar uma função JavaScript que devolve o system prompt do ClickBot.</p>
+<pre>function createSystemPrompt(){
+ return userPrompt;
+}</pre>
+<div class="goal">Esperado: usar esta função dentro da config Gemini.</div>
+</div>
+
+<div class="card">
+<h3>Exercício 2 — Few Shot com classifyPriority()</h3>
+<p><b>Tarefa:</b> Criar função que envia exemplos ao modelo para classificar prioridades.</p>
+<pre>function classifyPriority(text){
+ // enviar examples + text para Gemini
+}</pre>
+<pre>Exemplos:
+"site caiu" -> Alta
+"mudar botão" -> Média
+"trocar favicon" -> Baixa</pre>
+<div class="tip">Dica: coloca os exemplos antes do pedido real.</div>
+</div>
+
+<div class="card">
+<h3>Exercício 3 — Temperature Lab</h3>
+<p><b>Tarefa:</b> Criar função generateNames(temp).</p>
+<pre>function generateNames(temp){
+ // config.temperature = temp
+}</pre>
+<p>Testar com 0.2, 0.8 e 1.2</p>
+<div class="goal">Esperado: comparar criatividade.</div>
+</div>
+
+<div class="card">
+<h3>Exercício 4 — Chain of Thought</h3>
+<p><b>Tarefa:</b> Criar função planSprint().</p>
+<pre>function planSprint(){
+ // prompt: analisa passo a passo, tem atenção aos tokens
+}</pre>
+<pre>Pedido:
+Organiza sprint de 5 dias para lançar landing page.</pre>
+<div class="goal">Esperado: resposta com ordem lógica e prioridades.</div>
+</div>
+
+
+
+<div class="card">
+<h3>Exercício 5 — Chat com Memória Real</h3>
+
+<p><b>Objetivo:</b> Fazer o ClickBot lembrar-se de informações ditas anteriormente.</p>
+
+<p><b>Problema:</b> A AI esquece tudo entre requests se não enviares histórico.</p>
+
+<p><b>Tarefa:</b> Criar um array <code>history</code> e guardar todas as mensagens e enviar essas mensagens para o Gemini.</p>
+
+<p><b>Teste obrigatório:</b></p>
+
+<pre>
+sendMessage("O meu nome é Ana");
+sendMessage("Trabalho em marketing");
+sendMessage("Como me chamo?");
+</pre>
+
+<p><b>Resultado esperado:</b></p>
+
+<pre>
+Chamas-te Ana.
+</pre>
+
+<div class="tip">
+<b>Dica:</b> Sem enviar <code>history</code>, a AI não se vai lembrar.
+</div>
+
+</div>
+
+<div class="card">
+<h3>Exercício 6 — Sliding Window</h3>
+<p><b>Tarefa:</b> Limitar histórico às últimas 5 mensagens.</p>
+<pre>history = history.slice(-5);</pre>
+<div class="goal">Esperado: menos tokens e custo.</div>
+</div>
+
+<div class="card">
+<h3>Exercício 7 — Memory Summary</h3>
+<p><b>Tarefa:</b> Criar função summarizeHistory().</p>
+<pre>function summarizeHistory(){
+ // pedir resumo ao Gemini
+}</pre>
+<div class="goal">Esperado: guardar contexto curto.</div>
+</div>
+
+<h2>⚙️ Parte 3 — Gemini Avançado</h2>
+
+<div class="card">
+<h3>Exercício 8 — Thinking Mode (Planeamento de Feature Real)</h3>
+
+<p><b>Objetivo:</b> Usar o modo de raciocínio do Gemini para planear uma feature complexa de produto com várias decisões técnicas.</p>
+
+<p><b>Cenário real (ClickBot AI):</b></p>
+
+<p>
+A equipa quer adicionar uma nova funcionalidade ao ClickBot:
+<b>"AI Task Auto-Split"</b>
+</p>
+
+<p>
+Quando um utilizador escreve uma tarefa grande, por exemplo:
+</p>
+
+<pre>
+"Criar sistema completo de login com OAuth, recuperação de password e 2FA"
+</pre>
+
+<p>A AI deve transformar isso em várias subtarefas automaticamente no ClickUp.</p>
+
+<p><b>Tarefa:</b> Criar a função <code>generateTaskBreakdown()</code> que usa Thinking Mode para planear como esta feature deve funcionar.</p>
+
+
+<p><b>Resultado esperado:</b></p>
+
+<ul>
+<li>Definição de regras para splitting de tarefas</li>
+<li>Estrutura JSON para subtarefas</li>
+<li>Regras para não over-split</li>
+<li>Fluxo frontend → backend → AI</li>
+<li>Casos edge (tarefas curtas / vagas)</li>
+</ul>
+
+<div class="tip">
+<b>Dica:</b> O Thinking Mode deve ser usado quando há decisões de arquitetura ou múltiplas etapas envolvidas.
+</div>
+
+
+</div>
+
+<div class="card">
+<h3>Exercício 9 — Endpoint Final</h3>
+<p><b>Tarefa:</b> Criar endpoint para chat.</p>
+<pre>POST /api/clickbot/chat</pre>
+<div class="goal">Esperado: resposta JSON .</div>
+</div>
+
+</body>
+</html>
