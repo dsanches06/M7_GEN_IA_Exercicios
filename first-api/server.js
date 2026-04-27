@@ -1,9 +1,8 @@
-import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 import { GoogleGenAI } from '@google/genai';
-
-dotenv.config();
+import dotenv from "dotenv";
+dotenv.config({ path: "../.env" });
 
 // Check if API key is available
 if (!process.env.GEMINI_API_KEY) {
@@ -111,8 +110,18 @@ app.get('/', (req, res) => {
         success: true,
         message: 'AI Task System API',
         endpoints: [
-            'POST /api/tasks/create - Create task from text'
+            'POST /api/tasks/create - Create task from text',
+            'GET /health - Health check'
         ]
+    });
+});
+
+// Health endpoint
+app.get('/', (req, res) => {
+    res.status(200).json({
+        success: true,
+        status: 'ok',
+        uptime: process.uptime()
     });
 });
 
