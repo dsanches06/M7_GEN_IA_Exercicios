@@ -1,5 +1,13 @@
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+import {
+  parseJsonResponse,
+  buildThinkingConfig,
+  buildGeminiContents,
+  getThinkingLevel,
+  createFallbackBreakdown,
+} from "./utils.js";
+
 dotenv.config({ path: "../../.env" });
 
 if (!process.env.GEMINI_API_KEY) {
@@ -10,8 +18,7 @@ const gemini = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
 
-//Exercício 1 — Função createSystemPrompt()
-//Tarefa: Criar uma função JavaScript que devolve o system prompt do ClickBot.
+//Exercício 1 — Configuração e Endpoint Básico
 function createSystemPrompt() {
   const prompt = `És o ClickBot, um assistente integrado com ClickUp.
                   Ajudas a organizar tarefas, prioridades (alta, media, baixa), sprints e ideias.
@@ -57,14 +64,16 @@ export async function classifyPriority(text) {
 
 //Exercício 3 — Temperature Lab
 //Tarefa: Criar função generateNames(temp).
-export async function generateNames(temp) {
+export async function generateNames(temp = 0.3) {
+  const temperature = Number.isFinite(Number(temp)) ? Number(temp) : 0.3;
+
   const prompt = `Gera nomes claros e criativos para um projeto ou funcionalidade.
                  Retorna apenas um objeto JSON com o nome gerado no formato:
-                 { "nome": "" }.
-                 Sem markdown, sem blocos de código.`;
+                 { "nome": "nomegerado" }.
+                 Sem markdown, sem blocos de código, sem texto adicional.`;
 
-  const response = await callGemini(prompt, temp);
-  return JSON.parse(response.trim());
+  const response = await callGemini(prompt, temperature);
+  return parseJsonResponse(response);
 }
 
 //Exercício 4 — Chain of Thought
@@ -107,34 +116,31 @@ export async function sendMessage(userInput) {
 
   limitHistory();
 
-  const prompt = history
-    .map((message) => `${message.role}: ${message.parts[0].text}`)
-    .join("\n");
+  const text = await callGemini(history);
 
-  const text = await callGemini(prompt);
+  history.push({ role: "assistant", parts: [{ text }] });
 
-  history.push({ role: "model", parts: [{ text }] });
-
-  return text;
+  return history;
 }
 
 //Exercício 7 — Memory Summary
 //Tarefa: Criar função summarizeHistory().
 export async function summarizeHistory() {
-  const prompt = `
-Resume esta conversa de forma curta, clara e objetiva:
-
-${history.map((m) => m.parts[0].text).join("\n")}
+  const summaryPrompt = `
+Resume esta conversa de forma curta, clara e objetiva.
 
 Retorna apenas o resumo em texto simples, sem markdown.`;
 
-  const response = await callGemini(prompt);
+  const response = await callGemini([
+    ...history,
+    { role: "user", parts: [{ text: summaryPrompt }] },
+  ]);
 
   const summary = response.trim();
 
   history = [
     { role: "user", parts: [{ text: "Resumo da conversa até agora:" }] },
-    { role: "model", parts: [{ text: summary }] },
+    { role: "assistant", parts: [{ text: summary }] },
   ];
 
   return history;
@@ -142,41 +148,92 @@ Retorna apenas o resumo em texto simples, sem markdown.`;
 
 //Exercício 8 — Thinking Mode (Planeamento de Feature Real)
 export async function generateTaskBreakdown(task) {
+  const normalizedTask = String(task || "").trim();
+  if (!normalizedTask) {
+    throw new Error("Task must not be empty");
+  }
+
   const prompt = `
-            Tu és um arquiteto de software.
+            Tu és o arquiteto de produto do ClickBot.
+            Usa o modo de pensamento e pensa passo a passo antes de responder.
+            Analisa a tarefa para decidir se deve ser dividida em subtarefas ou mantida como uma única tarefa executável.
 
-            Divide a seguinte tarefa em subtarefas organizadas:
+            Regras principais:
+            - Define regras claras para dividir tarefas grandes ou multi-fase.
+            - Evita o over-splitting; máximo 5 subtarefas.
+            - Tarefas curtas, simples ou vagas devem ser devolvidas como uma única tarefa clara.
+            - Cada subtarefa deve ser executável e conter título, descrição e prioridade.
+            - Prioridade deve ser: alta, media ou baixa.
+            - Quando fizer sentido, alinha o breakdown ao fluxo frontend → backend → AI.
 
-            Tarefa:
-            "${task}"
-
-            Regras:
-            - Não criar subtarefas desnecessárias
-            - Máximo 3 subtarefas
-            - Cada subtarefa deve ser clara e executável
-
-            Devolve apenas JSON válido, sem markdown ou texto adicional:
+            Estrutura JSON exigida:
             {
               "tasks": [
-                { "title": "", "description": "", "priority": "" }
+                {
+                  "title": "Título curto e objetivo",
+                  "description": "Descrição clara e limitada",
+                  "priority": "alta|media|baixa"
+                }
               ]
             }
-`;
 
-  const response = await callGemini(prompt);
-  return response.trim();
+            Responde apenas JSON válido, sem markdown nem texto adicional.
+
+            Tarefa:
+            "${normalizedTask}"
+  `;
+
+  const response = await callGemini(prompt, 0.5, true, {
+    thinkingBudget: 1024,
+  });
+
+  try {
+    return parseJsonResponse(response);
+  } catch (error) {
+    console.warn(
+      "Resposta inválida do modelo para generateTaskBreakdown:",
+      error,
+    );
+    return createFallbackBreakdown(normalizedTask);
+  }
 }
 
-//Função auxiliar para chamar o Gemini com o prompt e obter a resposta.
-export async function callGemini(userPrompt, temp = 0.3) {
+//Função auxiliar para chamar o Gemini com histórico e opções de pensamento.
+export async function callGemini(
+  userPromptOrHistory,
+  temp = 0.3,
+  thinking = false,
+  thinkingOptions = {},
+) {
+  //Constrói o conteúdo para o Gemini, adaptando o
+  // formato do prompt ou do histórico conforme necessário.
+  const contents = buildGeminiContents(userPromptOrHistory);
+
   const response = await gemini.models.generateContent({
     model: "gemini-2.5-flash-lite",
-    contents: [{ parts: [{ text: userPrompt }] }],
+    contents,
     config: {
       systemInstruction: createSystemPrompt(),
       temperature: temp,
+      ...(thinking && {
+        thinkingConfig: buildThinkingConfig(thinkingOptions, temp),
+      }),
     },
   });
 
-  return response.candidates[0].content.parts[0].text;
+  //Extrai a resposta do modelo, lidando com possíveis formatos de resposta.
+  const parts = response.candidates[0].content.parts;
+  const thoughtParts = parts.filter((part) => part.text && part.thought);
+
+  if (thinking && thoughtParts.length > 0) {
+    console.log("Thoughts summary:");
+    for (const thought of thoughtParts) {
+      console.log(thought.text);
+    }
+  }
+
+  const answerPart = parts.find((part) => part.text && !part.thought);
+  return answerPart
+    ? answerPart.text
+    : parts.map((part) => part.text).join("\n");
 }

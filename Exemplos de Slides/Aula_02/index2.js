@@ -17,15 +17,18 @@ async function main() {
       },
     },
   });
+
+  let thoughts = "";
   for (const part of response.candidates[0].content.parts) {
     if (!part.text) {
       continue;
-    } 
-    else if (part.thought) {
-      console.log("Thoughts summary:");
+    } else if (part.thought) {
+      if (!thoughts) {
+        console.log("Thoughts summary:");
+      }
       console.log(part.text);
-    }
-     else {
+      thoughts += part.text;
+    } else {
       console.log("Answer:");
       console.log(part.text);
     }
