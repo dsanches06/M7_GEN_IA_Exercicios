@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercícios Avançados: ClickBot GenAI Edition</title>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f8fafc; color: #1e293b; max-width: 1100px; margin: auto; padding: 40px; line-height: 1.6; }
+        h1 { font-size: 34px; color: #0f172a; border-bottom: 3px solid #7b68ee; padding-bottom: 10px; }
+        h2 { margin-top: 40px; color: #4b48ff; font-size: 24px; }
+        .card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin: 18px 0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        pre { background: #0f172a; color: #38bdf8; padding: 14px; border-radius: 8px; overflow: auto; font-size: 13px; border-left: 5px solid #7b68ee; }
+        .tip { background: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 12px; border-radius: 6px; margin: 10px 0; font-size: 14px; }
+        .goal { background: #f0fdf4; border-left: 4px solid #22c55e; padding: 12px; border-radius: 6px; margin: 10px 0; font-size: 14px; font-weight: bold; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; color: white; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
+        .stream { background: #8b5cf6; } .json { background: #3b82f6; } .db { background: #10b981; }
+        code { background: #f1f5f9; padding: 2px 5px; border-radius: 4px; font-family: monospace; color: #e11d48; }
+    </style>
+</head>
+<body>
+
+<h1>ClickBot Builder: Workshop Prático GenAI</h1>
+
+<p>Construa funcionalidades de próxima geração para o "ClickBot", o assistente inteligente da nossa plataforma de produtividade.</p>
+
+<div class="card">
+    <span class="badge stream">Streaming</span> <span class="badge db">Database</span>
+    <h3>1. Chat de Suporte com Memória Persistente</h3>
+    <p><b>Contexto:</b> O utilizador precisa de ajuda sobre como usar o ClickUp. A resposta deve aparecer gradualmente para melhorar a UX.</p>
+    <p><b>Tarefa:</b></p>
+    <ul>
+        <li>No Express, crie uma rota <code>GET /chat</code> que retorna um <code>text/event-stream</code>.</li>
+        <li>Consuma o <code>result.stream</code> do Gemini e mostre cada chunk na consola .</li>
+        <li>Após o stream terminar (<code>[DONE]</code>), guarde a <code>user_message</code> e a <code>ai_response</code> completa na tabela <code>chat_history</code>.</li>
+    </ul>
+</div>
+
+<div class="card">
+    <span class="badge json">Structured Output</span>
+    <h3>2. Smart Task Parser (NLP para JSON)</h3>
+    <p><b>Contexto:</b> Transformar mensagens informais do utilizador em tarefas estruturadas para a API do ClickUp.</p>
+    <p><b>Input:</b> "Preciso de um design para a home page até sexta com prioridade alta."</p>
+    <p><b>Tarefa:</b> Use o Gemini com <code>responseMimeType: "application/json"</code> e um schema Zod para extrair:</p>
+    <pre>
+{
+  "title": string,
+  "due_date": string (ISO),
+  "priority": "urgent" | "high" | "normal" | "low",
+  "department": "design" | "dev" | "marketing"
+}</pre>
+    <div class="tip">Dica: Use <code>zodToJsonSchema</code> para passar as definições de tipo ao modelo.</div>
+</div>
+
+<div class="card">
+    <span class="badge stream">Streaming</span> <span class="badge db">Database</span>
+    <h3>3. Transcritor de Reuniões em Tempo Real</h3>
+    <p><b>Contexto:</b> O utilizador cola notas de uma reunião (ex: transcrição de áudio) e o sistema gera um sumário executivo.</p>
+    <p><b>Tarefa:</b></p>
+    <ul>
+        <li>Implemente um stream que gera o sumário à medida que analisa o texto longo.</li>
+        <li>Enquanto o stream corre, exiba um indicador de "A processar pontos chave...".</li>
+        <li>Guarde o resultado final na tabela <code>meeting_summaries</code> vinculada ao <code>project_id</code>.</li>
+    </ul>
+    <pre>Tabela: meeting_summaries (id, project_id, original_text, summary, created_at)</pre>
+</div>
+
+<div class="card">
+    <span class="badge json">Structured Output</span> <span class="badge db">Database</span>
+    <h3>4. Triage Automática de Bugs</h3>
+    <p><b>Contexto:</b> Analisar reportes de erros enviados por utilizadores e decidir a gravidade.</p>
+    <p><b>Tarefa:</b> Crie uma função que recebe o texto do erro, usa IA para classificar e <b>insere automaticamente</b> na tabela <code>tickets</code> se a gravidade for "crítica".</p>
+    <pre>
+Output esperado:
+{
+  "error_type": "UI" | "API" | "Database",
+  "severity": 1 a 10,
+  "fix_suggestion": "string"
+}</pre>
+    <div class="goal">Objetivo: Automação onde o sistema "toma decisões" baseado no JSON da IA.</div>
+</div>
+
+<div class="card">
+    <span class="badge stream">Streaming</span> <span class="badge json">Structured Output</span>
+    <h3>5. Smart Planner Semanal</h3>
+    <p><b>Contexto:</b> O utilizador diz o que tem para fazer na semana e a IA organiza um calendário.</p>
+    <p><b>Input:</b> "Tenho que entregar o logo, ir ao dentista na terça e estudar React todos os dias."</p>
+    <p><b>Tarefa:</b> O modelo deve gerar um stream de texto explicando o raciocínio e, no final, um bloco JSON com a agenda.</p>
+</div>
+
+
+
+<div class="card">
+    <span class="badge json">Structured Output</span>
+    <h3>6. Sentiment Dashboard para Gestores</h3>
+    <p><b>Contexto:</b> Dashboard que mostra a "saúde" da equipa com base nos comentários das tarefas.</p>
+    <p><b>Tarefa:</b> Crie um script que percorre os últimos 20 comentários (mock data), envia-os num único prompt para o Gemini e recebe um JSON consolidado:</p>
+    <pre>
+{
+  "team_mood": "happy" | "stressed" | "neutral",
+  "main_blocker": "string",
+  "burnout_risk": boolean
+}</pre>
+</div>
+
+<div class="card" style="border: 2px solid #7b68ee; background: #fdfbff;">
+    <h3>Resultado Final Esperado</h3>
+    <p>Ao terminar estes exercícios, o aluno terá um backend Express capaz de processar linguagem natural, validar dados com Zod, entregar respostas rápidas via Streaming e manter a persistência numa Base de Dados real.</p>
+</div>
+
+</body>
+</html>

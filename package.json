@@ -4,12 +4,8 @@
   "description": "Exercícios de Laboratórios do Modulo 7 - GEN IA",
   "main": "index.js",
   "scripts": {
-    "//": "node --env-file=.env \"./Exemplos de Slides/Aula_01/index.js\"",
-    "//": "node --env-file=.env \"./Exemplos de Slides/Aula_02/index2.js\"",
-    "//": "node --env-file=.env \"./Exercicios Guiados/guiados_01/index.js\"",
-    "start": "node --env-file=.env \"./Exercicios Guiados/guiados_02/server.js\"",
-    "//": "node --env-file=.env \"./first-api/server.js\"",
     "//": "node --env-file=.env \"./first-api-groq-api/index.js\"",
+    "start": "node --env-file=.env \"./Exercicios Guiados/guiados_02/server.js\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -33,6 +29,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "groq-sdk": "^1.1.2",
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.14",
+    "zod": "^4.4.1"
   }
 }
