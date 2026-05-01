@@ -12,6 +12,8 @@ dist/
 
 # Ignora o .env dentro da pasta DB backend
 DB\ backend/.env
+DB\ backend/.env.example
 
-# Forma mais segura (ignora qualquer .env em qualquer subpasta)
+# Recomendado: Ignora qualquer ficheiro .env ou .example em qualquer pasta
 **/.env
+**/.env.example
