@@ -1,2 +1,17 @@
-node_modules
+# Ignora node_modules em qualquer subpasta do projeto
+node_modules/
+
+# Se quiser ser específico por pasta:
+chatui/node_modules/
+db_backend/node_modules/
+
+# Outros ficheiros comuns a ignorar
 .env
+dist/
+.DS_Store
+
+# Ignora o .env dentro da pasta DB backend
+DB\ backend/.env
+
+# Forma mais segura (ignora qualquer .env em qualquer subpasta)
+**/.env
