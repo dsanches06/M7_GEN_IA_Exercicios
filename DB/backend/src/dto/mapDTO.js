@@ -327,3 +327,53 @@ export function mapTeamStatsDTOResponse(data) {
     totalTeams: data.totalTeams,
   };
 }
+
+// Função para mapear resposta de histórico de chat
+export function mapChatHistoryDTOResponse(data) {
+  return {
+    id: data.id,
+    content: data.content,
+    created_at: data.created_at,
+  };
+}
+
+// Função para mapear resposta de histórico de conversa
+export function mapConversationDTOResponse(data) {
+  return {
+    id: data.id,
+    content: data.content,
+    created_at: data.created_at,
+  };
+} 
+
+// Função para mapear resposta de resumo de reunião
+export function mapMeetingSummarieDTOResponse(data) {
+  return {
+    id: data.id,
+    content: data.content,
+    created_at: data.created_at,
+  };
+}
+
+/* Função para mapear resposta de comentário */
+export function mapConversationDTOResponse(data) {
+  return {
+    id: data.id,
+    content: data.content,
+    created_at: data.created_at,
+  };
+} 
+
+//
+export function mapTicketDTOResponse(data) {
+  return {
+    id: data.id,
+    title: data.title,
+    description: data.description,
+    status_id: data.status_id,
+    priority_id: data.priority_id,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+  };
+}
+
