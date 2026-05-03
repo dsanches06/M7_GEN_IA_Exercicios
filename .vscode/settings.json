@@ -1,0 +1,9 @@
+{
+  "js/ts.validate.enable": false,
+  "eslint.workingDirectories": [
+    { "mode": "auto" }
+  ],
+  "files.exclude": {
+    "**/node_modules": true
+  }
+}

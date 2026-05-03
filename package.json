@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "//": "node --env-file=.env \"./first-api-groq-api/index.js\"",
-    "start": "node --env-file=.env \"./Exercicios Guiados/guiados_02/server.js\"",
+    "start": "node --env-file=.env \"./Exercicios Guiados/guiados_03/server.js\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -15,7 +15,14 @@
   "engines": {
     "node": ">=14.0.0"
   },
-  "keywords": [],
+  "keywords": [
+    "genai",
+    "gemini",
+    "streaming",
+    "structured-output",
+    "zod",
+    "express"
+  ],
   "author": "",
   "license": "ISC",
   "type": "module",
@@ -25,11 +32,13 @@
   "homepage": "https://github.com/dsanches06/M7_GEN_IA_Exercicios#readme",
   "dependencies": {
     "@google/genai": "^1.50.1",
+    "@google/generative-ai": "^0.19.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "groq-sdk": "^1.1.2",
     "nodemon": "^3.1.14",
-    "zod": "^4.4.1"
+    "zod": "^4.4.1",
+    "zod-to-json-schema": "^3.23.0"
   }
 }

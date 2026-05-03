@@ -26,6 +26,10 @@ import reminderRoutes from "./routes/reminderRoutes.js";
 import mentionRoutes from "./routes/mentionRoutes.js";
 import timeLogRoutes from "./routes/timeLogRoutes.js";
 import statisticsRoutes from "./routes/statisticsRoutes.js";
+import chatHistoryRoutes from "./routes/chatHistoryRoutes.js";
+import conversationRoutes from "./routes/conversationRoutes.js";
+import meetingSummarieRoutes from "./routes/meetingSummarieRoutes.js";
+import ticketRoutes from "./routes/ticketRoutes.js";
 import logger from "./middlewares/loggerMiddleware.js";
 
 const app = express();
@@ -76,6 +80,12 @@ app.use("/reminders", reminderRoutes);
 app.use("/mentions", mentionRoutes);
 app.use("/time_logs", timeLogRoutes);
 app.use("/statistics/ranking", statisticsRoutes);
+
+//novos routes
+app.use("/chat_history", chatHistoryRoutes);
+app.use("/conversations", conversationRoutes);
+app.use("/meeting_summaries", meetingSummarieRoutes);
+app.use("/tickets", ticketRoutes);
 
 /* Iniciar o servidor */
 const PORT = process.env.PORT || 3000;

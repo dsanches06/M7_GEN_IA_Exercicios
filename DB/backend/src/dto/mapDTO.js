@@ -355,16 +355,7 @@ export function mapMeetingSummarieDTOResponse(data) {
   };
 }
 
-/* Função para mapear resposta de comentário */
-export function mapConversationDTOResponse(data) {
-  return {
-    id: data.id,
-    content: data.content,
-    created_at: data.created_at,
-  };
-} 
-
-//
+// Função para mapear resposta de tiquete
 export function mapTicketDTOResponse(data) {
   return {
     id: data.id,
