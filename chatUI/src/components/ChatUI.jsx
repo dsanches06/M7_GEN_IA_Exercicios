@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/context/ThemeContext";
 
-export default function ChatInput({ onSend }) {
+export default function ChatInput({ onSend, placeholder = "Pergunte qualquer coisa" }) {
   const [value, setValue] = useState("");
   const { theme } = useTheme();
 
@@ -48,7 +48,7 @@ export default function ChatInput({ onSend }) {
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
           type="text"
-          placeholder="Pergunte qualquer coisa"
+          placeholder={placeholder}
           className={`mx-3 flex-1 bg-transparent text-[20px] outline-none min-w-0 transition-colors ${
             theme === "dark"
               ? "text-[#ececec] placeholder:text-[#9b9b9b]"

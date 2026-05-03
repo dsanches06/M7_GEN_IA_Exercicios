@@ -17,7 +17,13 @@ export const createMeetingSummary = async (data) => {
     "INSERT INTO meeting_summaries (project_id, original_text, summary) VALUES (?, ?, ?)",
     [project_id, original_text, summary]
   );
-  return mapMeetingSummaryDTOResponse({ id: result.insertId, project_id, original_text, summary, created_at: new Date() });
+  return mapMeetingSummaryDTOResponse({ 
+    id: result.insertId, 
+    project_id, 
+    original_text, 
+    summary, 
+    created_at: new Date() 
+  });
 };
 
 export const updateMeetingSummary = async (id, data) => {

@@ -30,6 +30,7 @@ import chatHistoryRoutes from "./routes/chatHistoryRoutes.js";
 import conversationRoutes from "./routes/conversationRoutes.js";
 import meetingSummarieRoutes from "./routes/meetingSummarieRoutes.js";
 import ticketRoutes from "./routes/ticketRoutes.js";
+import exercisesRoutes from "./routes/exercisesRoutes.js";
 import logger from "./middlewares/loggerMiddleware.js";
 
 const app = express();
@@ -81,7 +82,12 @@ app.use("/mentions", mentionRoutes);
 app.use("/time_logs", timeLogRoutes);
 app.use("/statistics/ranking", statisticsRoutes);
 
-//novos routes
+// =====================================================
+// 🚀 EXERCÍCIOS GUIADOS 03 - IA (GenAI Workshop)
+// =====================================================
+app.use("/exercises", exercisesRoutes);
+
+// CRUD - Histórico de Chats e Conversas
 app.use("/chat_history", chatHistoryRoutes);
 app.use("/conversations", conversationRoutes);
 app.use("/meeting_summaries", meetingSummarieRoutes);

@@ -14,4 +14,12 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    proxy: {
+      "/chat_history": "http://localhost:3000",
+      "/conversations": "http://localhost:3000",
+      "/meeting_summaries": "http://localhost:3000",
+      "/tickets": "http://localhost:3000",
+    },
+  },
 });

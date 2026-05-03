@@ -45,13 +45,13 @@ export const createConversation = async (req, res) => {
 /* Função para deletar conversa */
 export const deleteConversation = async (req, res) => {
   try {
-    const conversation = await conversationService.deleteConversation(
-      Number(req.params.id),
-    );
-    await taskService.removeConversationFromAllTasks(Number(req.params.id));
-    res
-      .status(200)
-      .json({ message: "Conversa deletada com sucesso", conversation });
+    const id = Number(req.params.id);
+    const conversation = await conversationService.deleteConversation(id);
+    
+    // Certifique-se de que taskService esteja importado no topo do arquivo
+    await taskService.removeConversationFromAllTasks(id);
+    
+    res.status(200).json({ message: "Conversa deletada com sucesso", conversation });
   } catch (error) {
     res.status(404).json({ message: "Erro ao deletar conversa" });
   }
@@ -69,22 +69,11 @@ export const updateConversation = async (req, res) => {
         .json({ message: "O título da conversa não pode ser vazio" });
     }
 
-    const conversation = await conversationService.updateConversation(conversationId, req.body);
-    if (!conversation) {
-      return res.status(404).json({ message: "Conversa não encontrada" });
-    }
-
-    res.status(200).json(conversation);
-    if (conversationExists) {
-      return res
-        .status(400)
-        .json({ message: "Já existe uma conversa com este nome" });
-    }
-
     const conversation = await conversationService.updateConversation(
       conversationId,
       req.body,
     );
+
     if (!conversation) {
       return res.status(404).json({ message: "Conversa não encontrada" });
     }
@@ -99,8 +88,7 @@ export const updateConversation = async (req, res) => {
 export const getConversationTasks = async (req, res) => {
   try {
     const conversationId = Number(req.params.id);
-    const conversation =
-      await conversationService.getConversationById(conversationId);
+    const conversation = await conversationService.getConversationById(conversationId);
 
     if (!conversation) {
       return res.status(404).json({ error: "Conversa não encontrada" });

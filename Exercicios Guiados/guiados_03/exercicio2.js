@@ -26,7 +26,7 @@ export async function parseTaskFromNaturalLanguage(userMessage) {
     Use o schema: {title, due_date, priority, department}`;
 
     const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
+    const responseText = result.response.candidates[0].content.parts[0].text;
 
     // Validar e transformar
     const parsed = JSON.parse(responseText);

@@ -1,7 +1,7 @@
 import * as chatHistoryService from "../services/chatHistoryService.js";
 
 /* Função para buscar histórico de chat */
-export const getChatHistory = async (req, res) => {
+export const getChatHistories = async (req, res) => {
   try {
     const chatHistory = await chatHistoryService.getAllChatHistory();
     res.json(chatHistory);

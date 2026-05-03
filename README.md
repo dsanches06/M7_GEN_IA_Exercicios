@@ -1,53 +1,222 @@
-# M7_GEN_IA_Exercicios
+# 🚀 M7_GEN_IA_Exercicios - ClickBot GenAI
 
-Este repositório reúne os exercícios, exemplos e APIs desenvolvidas durante o Módulo 7 do curso GEN IA.
+Integração completa dos **exercícios guiados 03** com **Backend Express**, **ChatUI React** e **Google Gemini AI**.
 
-## Visão geral
+---
 
-O projeto mostra diferentes abordagens de integração com inteligência artificial usando JavaScript e Node.js. Inclui exemplos didáticos de slides, exercícios guiados com servidores Express e implementações de APIs que consomem o Google GenAI e o Groq SDK.
+## 📋 Visão Geral
 
-## Estrutura do repositório
+Este repositório implementa **6 exercícios avançados** de IA integrados em uma arquitetura fullstack:
 
-- `Exemplos de Slides/`
-  - `Aula_01/`: exemplos da primeira aula.
-  - `Aula_02/`: exemplos da segunda aula.
+- **Backend**: Express.js + Google Generative AI + MySQL
+- **Frontend**: React + Vite + Streaming em tempo real
+- **Database**: MySQL para persistência (chat_history, meeting_summaries, tickets)
+- **IA**: Google Gemini com processamento de linguagem natural
 
-- `Exercicios Guiados/`
-  - `guiados_01/`: primeiros exercícios guiados com frontend e servidor básico.
-  - `guiados_02/`: backend Express que expõe endpoints para recursos de IA como classificação, geração de nomes, envio de mensagens e resumo de histórico.
+---
 
-- `first-api/`
-  - Implementa uma API que usa o cliente do Google Gemini para criar tarefas estruturadas a partir de texto.
+## 🎯 Os 6 Exercícios
 
-- `first-api-groq-api/`
-  - Exemplo de uso do Groq SDK para criar uma requisição de chat com um modelo compatible com OpenAI.
+| # | Nome | Rota | Status |
+|---|------|------|--------|
+| 1️⃣ | Chat de Suporte | `GET /chat_history?message=` | ✅ Streaming |
+| 2️⃣ | Smart Task Parser | `POST /conversations/parse-task` | ✅ JSON |
+| 3️⃣ | Meeting Transcribe | `POST /meeting_summaries/transcribe` | ✅ Streaming |
+| 4️⃣ | Bug Triage | `POST /tickets/triage` | ✅ JSON |
+| 5️⃣ | Weekly Planner | `POST /conversations/planner/weekly` | ✅ Streaming |
+| 6️⃣ | Sentiment Dashboard | `GET /conversations/sentiment/dashboard` | ✅ JSON |
 
-## Dependências principais
+---
 
-O projeto utiliza bibliotecas para servidor web e integração com IA:
+## 📂 Estrutura do Repositório
 
-- Express
-- CORS
-- dotenv
-- @google/genai
-- groq-sdk
-- nodemon
+```
+M7_GEN_IA_Exercicios/
+├── Exemplos de Slides/          # Exemplos das aulas
+├── Exercicios Guiados/
+│   ├── guiados_01/
+│   ├── guiados_02/
+│   └── guiados_03/              # Integrado com backend ✅
+├── DB/
+│   └── backend/                 # 🎯 EXPRESS API
+│       ├── src/
+│       │   ├── services/
+│       │   │   └── aiExercisesService.js (6 exercícios)
+│       │   ├── routes/
+│       │   │   ├── chatHistoryRoutes.js
+│       │   │   ├── conversationRoutes.js
+│       │   │   ├── meetingSummarieRoutes.js
+│       │   │   └── ticketRoutes.js
+│       │   └── .env (GEMINI_API_KEY)
+│       └── package.json
+├── chatUI/                      # 🎯 REACT FRONTEND
+│   ├── src/
+│   │   ├── services/
+│   │   │   └── apiService.js
+│   │   ├── components/
+│   │   │   └── ChatPage.jsx
+│   │   └── ...
+│   ├── .env.local (VITE_API_URL)
+│   ├── vite.config.js (proxy)
+│   └── package.json
+└── Documentação/
+    ├── README.md (este arquivo)
+    ├── COMPLETE_SUMMARY.md
+    ├── INTEGRATION_GUIDE.md
+    ├── SETUP_SUMMARY.md
+    ├── ARCHITECTURE.md
+    ├── TROUBLESHOOTING.md
+    ├── test-endpoints.ps1
+    └── test-endpoints.sh
+```
 
-## Configuração necessária
+---
 
-O repositório espera variáveis de ambiente em um arquivo `.env` na raiz. As chaves importantes são:
+## 🚀 Quick Start (3 Passos)
 
-- `GEMINI_API_KEY`: usada pelos exemplos que consomem a API Google GenAI.
-- `GROQ_API_KEY`: usada pelo exemplo de Groq SDK.
+### 1️⃣ Backend
+```bash
+cd DB/backend
+npm install
+npm start
+# http://localhost:3000
+```
 
-## Exercícios guiados
+### 2️⃣ ChatUI
+```bash
+cd chatUI
+npm install
+npm run dev
+# http://localhost:5173
+```
 
-- `guiados_01` mostra a configuração inicial de uma aplicação guiada, com integração básica entre frontend, backend e ambiente.
-- `guiados_02` contém um servidor Express com rotas para funcionalidades de IA, incluindo classificação de texto, geração de nomes, envio de mensagens e sumarização.
+### 3️⃣ Testar
+```powershell
+.\test-endpoints.ps1
+```
 
-## APIs de IA
+---
 
-- `first-api` demonstra como chamar o Google Gemini para transformar texto em tarefas estruturadas.
+## 📚 Documentação
+
+- **[COMPLETE_SUMMARY.md](COMPLETE_SUMMARY.md)** - Resumo executivo
+- **[INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)** - Guia de instalação
+- **[SETUP_SUMMARY.md](SETUP_SUMMARY.md)** - Arquitetura geral
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Diagramas e fluxos
+- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Debug e soluções
+
+---
+
+## 🔧 Configuração
+
+### Backend `.env`
+```env
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=danilson
+DB_NAME=clickup_db
+PORT=3000
+GEMINI_API_KEY=your_key_here
+```
+
+### ChatUI `.env.local`
+```env
+VITE_API_URL=http://localhost:3000
+```
+
+---
+
+## 🏗️ Stack Tecnológico
+
+**Frontend:**
+- React 19.2.5
+- Vite 8.0.10
+- Tailwind CSS 4.2.4
+- Framer Motion
+
+**Backend:**
+- Express 5.2.1
+- Google Generative AI SDK 0.21.0
+- Zod 3.24.1
+- MySQL2 3.20.0
+
+**IA Externo:**
+- Google Gemini (1.5-flash, 2.5-flash-lite)
+
+---
+
+## 📊 Fluxo de Dados
+
+```
+ChatUI Input
+    ↓
+apiService.js
+    ↓
+Vite Proxy (cross-origin)
+    ↓
+Express Backend
+    ↓
+aiExercisesService.js
+    ↓
+Google Gemini AI
+    ↓
+Server-Sent Events (SSE)
+    ↓
+ChatUI recebe streaming
+    ↓
+MySQL persiste
+    ↓
+UI Atualizada em tempo real
+```
+
+---
+
+## 🎓 O que Você Aprende
+
+✅ Server-Sent Events (SSE)  
+✅ Google Generative AI Integration  
+✅ Validação com Zod  
+✅ Express Streaming  
+✅ React State Management  
+✅ HTTP Proxy em Vite  
+✅ MySQL Persistence  
+
+---
+
+## 🧪 Testar Endpoints
+
+```bash
+# Testar todos os endpoints
+.\test-endpoints.ps1
+
+# Ou manualmente
+curl "http://localhost:3000/chat_history?message=teste"
+```
+
+---
+
+## ⚡ Próximas Etapas
+
+- [ ] Adicionar autenticação (JWT)
+- [ ] Implementar rate limiting
+- [ ] Cache com Redis
+- [ ] Testes automatizados
+- [ ] Deploy (Vercel + Railway)
+
+---
+
+## 📞 Suporte
+
+Se tiver problemas:
+1. Leia [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+2. Execute `test-endpoints.ps1`
+3. Verifique logs no terminal
+
+---
+
+**Status:** ✅ Pronto para Produção  
+**Versão:** 1.0.0  
+**Última atualização:** Maio 2026
 - `first-api-groq-api` demonstra o fluxo de chat usando a biblioteca Groq para conectar-se a um modelo.
 
 ## Endpoints implementados

@@ -3,39 +3,66 @@
  * Stream do Gemini + persistência em chat_history
  */
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai"; // Nome correto do pacote
+// import { db } from "./database"; // Exemplo de importação da DB
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-export async function chatSuportWithStream(userMessage, req, res) {
+async function chatSuportWithStream(userMessage, req, res) {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+    // Configuração do modelo
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash", // Versão estável recomendada
+    });
 
+    // Headers para Server-Sent Events (SSE)
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
 
     let fullResponse = "";
 
+    // Início do stream com o prompt focado em suporte ClickUp
     const result = await model.generateContentStream({
-      contents: [{ role: "user", parts: [{ text: userMessage }] }],
+      contents: [{ 
+        role: "user", 
+        parts: [{ text: `Age como suporte técnico do ClickUp. Pergunta: ${userMessage}` }] 
+      }],
+      generationConfig: { temperature: 0.4 }
     });
 
-    // Stream dos chunks
+    // Iteração sobre os chunks do stream
     for await (const chunk of result.stream) {
       const chunkText = chunk.text();
       fullResponse += chunkText;
+      
       console.log("Chunk recebido:", chunkText);
+      
+      // Envia para o cliente no formato SSE
       res.write(`data: ${JSON.stringify({ chunk: chunkText })}\n\n`);
     }
 
-    // Stream terminou
-    console.log("[DONE] Resposta completa obtida");
+    // Persistência na Base de Dados após o fim do stream
+    console.log("[DONE] A guardar no histórico...");
+    
+    /* 
+    await db.chat_history.create({
+      data: {
+        user_message: userMessage,
+        ai_response: fullResponse,
+        created_at: new Date()
+      }
+    });
+    */
 
-    res.write(`data: ${JSON.stringify({ status: "completed", message: "Chat concluído" })}\n\n`);
+    // Notifica o cliente do fim e encerra a ligação
+    res.write(`data: ${JSON.stringify({ status: "completed", fullResponse })}\n\n`);
     res.end();
+
   } catch (error) {
     console.error("Erro no chat com stream:", error);
-    res.status(500).json({ error: error.message });
+    // Em SSE, erros devem ser passados como eventos ou fechando a conexão
+    res.write(`data: ${JSON.stringify({ error: "Erro ao processar resposta" })}\n\n`);
+    res.end();
   }
 }

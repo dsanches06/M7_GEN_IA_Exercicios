@@ -347,7 +347,7 @@ export function mapConversationDTOResponse(data) {
 } 
 
 // Função para mapear resposta de resumo de reunião
-export function mapMeetingSummarieDTOResponse(data) {
+export function mapMeetingSummaryDTOResponse(data) {
   return {
     id: data.id,
     content: data.content,
