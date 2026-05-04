@@ -11,7 +11,6 @@ import { parseTaskFromNaturalLanguage } from "./exercicio2.js";
 import { setupMeetingRoutes } from "./exercicio3.js";
 import { triageBugReport, setupBugTriageRoutes } from "./exercicio4.js";
 import { planWeeklySchedule, setupPlannerRoutes } from "./exercicio5.js";
-import { analyzeTeamSentiment, setupSentimentRoutes } from "./exercicio6.js";
 
 dotenv.config();
 
@@ -73,11 +72,7 @@ setupBugTriageRoutes(app);
  */
 setupPlannerRoutes(app);
 
-/**
- * EXERCÍCIO 6: Sentiment Dashboard
- * GET /ex6/sentiment
- */
-setupSentimentRoutes(app);
+
 
 // =====================================================
 // HEALTH CHECK
@@ -93,7 +88,7 @@ app.get("/", (req, res) => {
       "3. Meeting Transcriber": "POST /meetings/transcribe",
       "4. Bug Triage": "POST /bugs/triage",
       "5. Weekly Planner": "POST /planner/weekly",
-      "6. Sentiment Dashboard": "GET /dashboard/sentiment"
+      "6. Sentiment Dashboard": "GET /exercises/dashboard/sentiment/database (via Backend API)"
     }
   });
 });

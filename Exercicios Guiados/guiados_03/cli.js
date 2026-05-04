@@ -5,7 +5,7 @@
  */
 
 import { parseTaskFromNaturalLanguage } from './exercicio2.js';
-import { analyzeTeamSentiment } from './exercicio6.js';
+import http from 'http';
 
 const colors = {
   reset: '\x1b[0m',
@@ -19,6 +19,34 @@ function log(color, ...args) {
   console.log(colors[color], ...args, colors.reset);
 }
 
+async function getSentimentFromAPI() {
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: 'localhost',
+      port: 3000,
+      path: '/exercises/dashboard/sentiment/database',
+      method: 'GET'
+    };
+
+    http.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const response = JSON.parse(data);
+          if (response.error) {
+            reject(new Error(response.error));
+          } else {
+            resolve(response.dashboard);
+          }
+        } catch (e) {
+          reject(new Error(`Erro ao parsear resposta: ${e.message}`));
+        }
+      });
+    }).on('error', reject).end();
+  });
+}
+
 async function runDemo() {
   log('cyan', '\n🎬 DEMO COMPLETO - ClickBot GenAI\n');
 
@@ -30,7 +58,7 @@ async function runDemo() {
     log('green', '✅ Task extraída:', JSON.stringify(task, null, 2));
 
     log('yellow', '\n📊 Exercício 6: Sentiment Dashboard');
-    const sentiment = await analyzeTeamSentiment();
+    const sentiment = await getSentimentFromAPI();  // ← MUDOU AQUI
     log('green', '✅ Dashboard extraído com sucesso\n');
 
   } catch (error) {
@@ -54,7 +82,7 @@ async function main() {
       break;
     case 'sentiment':
       log('yellow', 'Sentiment Dashboard');
-      const sentiment = await analyzeTeamSentiment();
+      const sentiment = await getSentimentFromAPI();  // ← MUDOU AQUI
       log('green', JSON.stringify(sentiment, null, 2));
       break;
     default:

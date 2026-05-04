@@ -1,14 +1,18 @@
 /**
  * Exercício 2: Smart Task Parser (NLP para JSON)
- * Adaptado para a sintaxe: genAI.models.generateContent
+ * Implementado com Zod v4 (Nativo) e Gemini
  */
-import { GoogleGenAI } from "@google/genai"; // Mantendo conforme o teu exemplo
-import { z } from "zod";
+import { GoogleGenAI } from "@google/genai";
+import * as z from "zod";
+import dotenv from "dotenv";
+
+dotenv.config({ path: "../../.env" });
 
 const genAI = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
 
+// 1. Definir o Schema com Zod v4
 const TaskSchema = z.object({
   title: z.string(),
   due_date: z.string(),
@@ -16,43 +20,49 @@ const TaskSchema = z.object({
   department: z.enum(["design", "dev", "marketing"]),
 });
 
-async function parseTaskFromNaturalLanguage(userMessage) {
+// 2. No Zod v4, o método é nativo da instância do schema
+const schema = TaskSchema.toJSONSchema();
+
+export async function parseTaskFromNaturalLanguage(userMessage) {
   try {
-    // Seguindo o padrão genAI.models.generateContent
+    // 3. Chamada ao Gemini seguindo a sintaxe solicitada
     const result = await genAI.models.generateContent({
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-2.5-flash-lite", // Verifique se esta versão está disponível no seu SDK
       contents: [
         {
           role: "user",
           parts: [
             {
-              text: `Extraia os dados da tarefa em JSON da seguinte mensagem: "${userMessage}". 
-              Campos obrigatórios: 
-              - title: string
-              - due_date: string
-              - priority: obrigatoriamente um destes (urgent, high, normal, low)
-              - department: obrigatoriamente um destes (design, dev, marketing)
-              
-              Responde apenas o JSON puro, sem markdown ou explicações.`,
+              text: `Extraia os dados da tarefa desta mensagem: "${userMessage}"`,
             },
           ],
         },
       ],
-      generationConfig: { 
-        temperature: 0.1, // Menor temperatura para maior precisão no JSON
-        responseMimeType: "application/json" 
+      generationConfig: {
+        temperature: 0.1,
+        responseMimeType: "application/json",
+        responseJsonSchema: schema, // O Zod v4 gera o schema compatível aqui
       },
     });
 
-    // No padrão que mostraste, acedemos ao texto assim:
     const responseText = result.response.text();
+    console.log("Resposta bruta do GenAI:", responseText);
 
-    // Validar e transformar
+    // 4. Parse do JSON e Validação Final
     const parsed = JSON.parse(responseText);
-    return TaskSchema.parse(parsed);
 
+    // O .parse() do Zod garante que os dados seguem o contrato definido
+    const validatedTask = TaskSchema.parse(parsed);
+
+    console.log("Resposta validada com Zod:", validatedTask);
+    return validatedTask;
   } catch (error) {
-    console.error("❌ Erro no Parser:", error.message);
+    // Tratamento de erros de parsing ou validação do Zod
+    if (error instanceof z.ZodError) {
+      console.error("❌ Erro de Validação Zod:", error.errors);
+    } else {
+      console.error("❌ Erro no Parser:", error.message);
+    }
     throw error;
   }
 }

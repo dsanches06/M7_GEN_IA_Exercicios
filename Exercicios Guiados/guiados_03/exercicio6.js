@@ -1,10 +1,11 @@
 /**
  * Exercício 6: Sentiment Analysis Dashboard
- * Análise de múltiplos comentários e retorno estruturado
  */
+import { GoogleGenAI } from "@google/genai";
+import * as z from "zod";
+import dotenv from "dotenv";
 
-import { GoogleGenAI } from "@google/genai"; // Sintaxe da escola
-import { z } from "zod";
+dotenv.config({ path: "../../.env" });
 
 const genAI = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
@@ -16,6 +17,9 @@ const SentimentDashboardSchema = z.object({
   burnout_risk: z.boolean(),
   recommendations: z.array(z.string()),
 });
+
+// CORREÇÃO ZOD V4: Chamada direta na instância
+const schema = SentimentDashboardSchema.toJSONSchema();
 
 export async function analyzeTeamSentiment() {
   try {
@@ -35,37 +39,30 @@ export async function analyzeTeamSentiment() {
     const commentsList = comments.map((c, i) => `${i + 1}. "${c}"`).join("\n");
 
     const result = await genAI.models.generateContent({
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-2.0-flash-lite", // Atualizado para versão estável sugerida
       contents: [
         {
           role: "user",
           parts: [
             {
-              text: `Analise os seguintes comentários de uma equipa e gere um relatório em JSON:
-              ${commentsList}
-
-              O JSON deve seguir este formato:
-              {
-                "team_mood": "happy" | "stressed" | "neutral",
-                "main_blocker": "string",
-                "burnout_risk": boolean,
-                "recommendations": ["string"]
-              }`
+              text: `Analise o sentimento da equipa baseado nestes comentários:\n${commentsList}`
             }
           ]
         }
       ],
       generationConfig: { 
         temperature: 0.2,
-        responseMimeType: "application/json" 
+        responseMimeType: "application/json",
+        responseJsonSchema: schema,
       },
     });
 
     const responseText = result.response.text();
     const parsed = JSON.parse(responseText);
+    
+    // Validação Zod v4
     const dashboard = SentimentDashboardSchema.parse(parsed);
 
-    // Logs decorativos no terminal
     const moodEmoji = { happy: "😊", stressed: "😰", neutral: "😐" };
     console.log(`\n${moodEmoji[dashboard.team_mood]} Estado: ${dashboard.team_mood.toUpperCase()}`);
     console.log(`⚠️ Bloqueador: ${dashboard.main_blocker}`);
@@ -79,7 +76,7 @@ export async function analyzeTeamSentiment() {
 }
 
 export function setupSentimentRoutes(app) {
-  app.get("/dashboard/sentiment", async (req, res) => {
+  app.get("/exercises/dashboard/sentiment", async (req, res) => {
     try {
       const dashboard = await analyzeTeamSentiment();
       res.json(dashboard);

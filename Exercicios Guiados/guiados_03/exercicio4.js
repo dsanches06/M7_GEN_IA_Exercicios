@@ -1,5 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
-import { z } from "zod";
+import { response } from "express";
+import * as z from "zod";
+import dotenv from "dotenv";
+
+dotenv.config({ path: "../../.env" });
 
 const genAI = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
@@ -10,6 +14,8 @@ const BugTriageSchema = z.object({
   severity: z.number().min(1).max(10),
   fix_suggestion: z.string(),
 });
+
+const schema = z.toJSONSchema(BugTriageSchema);
 
 export async function triageBugReport(errorReport) {
   try {
@@ -26,14 +32,15 @@ export async function triageBugReport(errorReport) {
                 "error_type": "UI" | "API" | "Database",
                 "severity": (número de 1 a 10),
                 "fix_suggestion": "string"
-              }`
-            }
-          ]
-        }
+              }`,
+            },
+          ],
+        },
       ],
       generationConfig: {
         temperature: 0.1,
-        responseMimeType: "application/json"
+        responseMimeType: "application/json",
+        responseJsonSchema: schema,
       },
     });
 
@@ -49,7 +56,7 @@ export async function triageBugReport(errorReport) {
       return {
         ...triage,
         priority: "CRITICAL",
-        auto_escalated: true
+        auto_escalated: true,
       };
     }
 
@@ -57,9 +64,8 @@ export async function triageBugReport(errorReport) {
     return {
       ...triage,
       priority: triage.severity >= 5 ? "HIGH" : "NORMAL",
-      auto_escalated: false
+      auto_escalated: false,
     };
-
   } catch (error) {
     console.error("❌ Erro no triage:", error.message);
     throw error;

@@ -7,6 +7,7 @@ import {
   planWeeklySchedule,
   analyzeTeamSentiment,
 } from "../services/aiExercisesService.js";
+import * as exercisesController from "../controllers/exercisesController.js";
 
 const router = express.Router();
 
@@ -20,9 +21,8 @@ router.get("/chat", async (req, res) => {
   await chatSuportWithStream(message, req, res);
 });
 
-// 🚀 EXERCÍCIO 2: Smart Task Parser (NLP para JSON)
+// 🚀 EXERCÍCIO 2: Smart Task Parser
 // POST /exercises/parse-task
-// Body: { "text": "Preciso de um design..." }
 router.post("/parse-task", async (req, res) => {
   const { text } = req.body;
   if (!text) {
@@ -36,7 +36,7 @@ router.post("/parse-task", async (req, res) => {
   }
 });
 
-// 🚀 EXERCÍCIO 3: Transcritor de Reuniões com Stream
+// 🚀 EXERCÍCIO 3: Transcritor de Reuniões
 // POST /exercises/meetings/transcribe
 router.post("/meetings/transcribe", async (req, res) => {
   const { notes, project_id } = req.body;
@@ -46,7 +46,7 @@ router.post("/meetings/transcribe", async (req, res) => {
   await transcribeMeetingWithStream(notes, project_id || 1, req, res);
 });
 
-// 🚀 EXERCÍCIO 4: Bug Triage Automática
+// 🚀 EXERCÍCIO 4: Bug Triage
 // POST /exercises/bugs/triage
 router.post("/bugs/triage", async (req, res) => {
   const { error_report } = req.body;
@@ -71,15 +71,25 @@ router.post("/planner/weekly", async (req, res) => {
   await planWeeklySchedule(tasks, req, res);
 });
 
-// 🚀 EXERCÍCIO 6: Sentiment Dashboard para Gestores
-// GET /exercises/dashboard/sentiment
-router.get("/dashboard/sentiment", async (req, res) => {
+// 🚀 EXERCÍCIO 6: Sentiment Dashboard
+// POST /exercises/dashboard/sentiment
+router.post("/dashboard/sentiment", async (req, res) => {
+  const { comments } = req.body;
+  if (!comments) {
+    return res.status(400).json({ error: "Campo 'comments' obrigatório" });
+  }
   try {
-    const dashboard = await analyzeTeamSentiment();
-    res.json(dashboard);
+    const result = await analyzeTeamSentiment(comments);
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+// 🚀 EXERCÍCIO 6: Sentiment Dashboard (Busca do BANCO DE DADOS)
+// GET /exercises/dashboard/sentiment/database
+router.get("/dashboard/sentiment/database", async (req, res) => {
+  await exercisesController.getSentimentDashboardFromDB(req, res);
 });
 
 export default router;

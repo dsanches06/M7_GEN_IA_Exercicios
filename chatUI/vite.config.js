@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import { fileURLToPath } from "url"; // Importe estas duas linhas
+import { fileURLToPath } from "url";
 import path from "path";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -16,6 +16,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
+      "/exercises": "http://localhost:3000",        // ✅ ADICIONADO
       "/chat_history": "http://localhost:3000",
       "/conversations": "http://localhost:3000",
       "/meeting_summaries": "http://localhost:3000",

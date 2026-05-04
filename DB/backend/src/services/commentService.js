@@ -88,4 +88,12 @@ export const updateComment = async (commentId, content) => {
   return updated[0];
 };
 
+/* Função para buscar TODOS os comentários */
+export const getAllComments = async () => {
+  const [comments] = await db.query(
+    "SELECT content FROM comment ORDER BY created_at DESC"
+  );
+  return comments.map(c => c.content);
+};
+
 

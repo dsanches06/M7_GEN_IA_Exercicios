@@ -3,8 +3,7 @@
  * Comunicação com endpoints REST do backend
  */
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:3000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 /**
  * ✅ Utilitário para leitura de streams SSE
@@ -58,11 +57,10 @@ async function createStreamIterator(response, errorMessage) {
   };
 }
 
-// ✅ EXERCÍCIO 1: Chat de Suporte com Stream (Gemini)
+// ✅ EXERCÍCIO 1: Chat de Suporte com Stream
+// Recebe: mensagem do utilizador
 export async function chatWithStream(message, conversationId = null) {
-  const params = new URLSearchParams({
-    message,
-  });
+  const params = new URLSearchParams({ message });
 
   if (conversationId) {
     params.set("conversation_id", String(conversationId));
@@ -75,24 +73,26 @@ export async function chatWithStream(message, conversationId = null) {
       headers: {
         Accept: "text/event-stream",
       },
-    }
+    },
   );
 
-  return createStreamIterator(response, "Erro ao conectar ao chat Gemini");
+  return createStreamIterator(response, "Erro ao conectar ao chat");
 }
 
-// ✅ EXERCÍCIO 2: Parse Task (NLP para JSON)
+// ✅ EXERCÍCIO 2: Parse Task
+// Recebe: descrição da tarefa em texto livre
 export async function parseTask(text) {
-  const response = await fetch(
-    `${API_BASE_URL}/exercises/parse-task`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ text }),
-    }
-  );
+  console.log("EXERCÍCIO 2: Enviando texto para parsear:", text);
+
+  const response = await fetch(`${API_BASE_URL}/exercises/parse-task`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ text }),
+  });
+
+  console.log("EXERCÍCIO 2: Resposta do backend:", response);
 
   if (!response.ok) {
     throw new Error("Erro ao fazer parse da tarefa");
@@ -101,7 +101,8 @@ export async function parseTask(text) {
   return response.json();
 }
 
-// ✅ EXERCÍCIO 3: Meeting Transcribe (Stream)
+// ✅ EXERCÍCIO 3: Meeting Transcribe
+// Recebe: notas da reunião do utilizador
 export async function transcribeMeeting(notes, projectId = 1) {
   const response = await fetch(
     `${API_BASE_URL}/exercises/meetings/transcribe`,
@@ -115,29 +116,22 @@ export async function transcribeMeeting(notes, projectId = 1) {
         notes,
         project_id: projectId,
       }),
-    }
+    },
   );
 
-  return createStreamIterator(
-    response,
-    "Erro ao transcrever reunião"
-  );
+  return createStreamIterator(response, "Erro ao transcrever reunião");
 }
 
 // ✅ EXERCÍCIO 4: Bug Triage
+// Recebe: relatório de erro do utilizador
 export async function triageBug(errorReport) {
-  const response = await fetch(
-    `${API_BASE_URL}/exercises/bugs/triage`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        error_report: errorReport,
-      }),
-    }
-  );
+  const response = await fetch(`${API_BASE_URL}/exercises/bugs/triage`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ error_report: errorReport }),
+  });
 
   if (!response.ok) {
     throw new Error("Erro no triage do bug");
@@ -146,40 +140,43 @@ export async function triageBug(errorReport) {
   return response.json();
 }
 
-// ✅ EXERCÍCIO 5: Weekly Planner (Stream)
+// ✅ EXERCÍCIO 5: Weekly Planner
+// Recebe: tarefas/prioridades da semana do utilizador
 export async function planWeekly(tasks) {
+  const response = await fetch(`${API_BASE_URL}/exercises/planner/weekly`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "text/event-stream",
+    },
+    body: JSON.stringify({ tasks }),
+  });
+
+  return createStreamIterator(response, "Erro ao planejar semana");
+}
+
+// ✅ EXERCÍCIO 6: Sentiment Dashboard
+// Recebe: comentários da equipa do utilizador
+export async function getSentimentDashboard(comments) {
+  // Pequena validação defensiva
+  if (!Array.isArray(comments) || comments.length === 0) {
+    throw new Error("É necessário fornecer uma lista de comentários.");
+  }
+
   const response = await fetch(
-    `${API_BASE_URL}/exercises/planner/weekly`,
+    `${API_BASE_URL}/exercises/dashboard/sentiment`,
     {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Accept: "text/event-stream",
       },
-      body: JSON.stringify({ tasks }),
-    }
-  );
-
-  return createStreamIterator(
-    response,
-    "Erro ao planejar semana"
-  );
-}
-
-// ✅ EXERCÍCIO 6: Sentiment Dashboard
-export async function getSentimentDashboard() {
-  const response = await fetch(
-    `${API_BASE_URL}/exercises/dashboard/sentiment`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
+      body: JSON.stringify({ comments }),
+    },
   );
 
   if (!response.ok) {
-    throw new Error("Erro ao obter sentimento");
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || "Erro ao obter dashboard de sentimento");
   }
 
   return response.json();

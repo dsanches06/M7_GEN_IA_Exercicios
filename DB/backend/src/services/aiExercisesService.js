@@ -23,10 +23,7 @@ const genAI = new GoogleGenAI({
 
 export async function chatSuportWithStream(userMessage, req, res) {
   try {
-    const model = await genAI.models({
-      model: "gemini-2.5-flash-lite",
-    });
-
+    // ✅ CORRIGIDO: Usar genAI.models.generateContentStream() direto
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
@@ -47,7 +44,8 @@ export async function chatSuportWithStream(userMessage, req, res) {
 
     let fullResponse = "";
 
-    const result = await model.generateContentStream({
+    const result = await genAI.models.generateContentStream({
+      model: "gemini-2.5-flash-lite",
       contents: [
         {
           role: "user",
@@ -124,16 +122,41 @@ const TaskSchema = z.object({
 
 export async function parseTaskFromNaturalLanguage(userMessage) {
   try {
-    const model = gemini.models.generateContent({
+    const result = await genAI.models.generateContent({
       model: "gemini-2.5-flash-lite",
-      generationConfig: { responseMimeType: "application/json" },
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: `Extract task data as JSON ONLY. No explanations, no prefix, no suffix. Just pure JSON.
+              Input: "${userMessage}"
+              Output JSON (no other text):`,
+            },
+          ],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.1,
+        responseMimeType: "application/json",
+        responseJsonSchema: z.toJSONSchema(TaskSchema),
+      },
     });
 
-    const prompt = `Extraia os dados da tarefa em JSON: "${userMessage}". 
-    Use o schema: {title, due_date, priority, department}`;
+    // ✅ CORRIGIDO: Tentar múltiplas formas de aceder à resposta
+    let responseText;
+    if (typeof result.text === "function") {
+      responseText = result.text();
+    } else if (result.candidates && result.candidates[0]) {
+      responseText = result.candidates[0].content.parts[0].text;
+    } else if (result.response && result.response.text) {
+      responseText = result.response.text;
+    } else {
+      responseText = result.text || JSON.stringify(result);
+    }
 
-    const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
+    // Limpar prefácios em português/outras línguas
+    responseText = responseText.replace(/^[\s\S]*?({)/, "$1").trim();
 
     const parsed = JSON.parse(responseText);
     return TaskSchema.parse(parsed);
@@ -154,10 +177,7 @@ export async function transcribeMeetingWithStream(
   res,
 ) {
   try {
-    const model = gemini.models.generateContent({
-      model: "gemini-2.5-flash-lite",
-    });
-
+    // ✅ CORRIGIDO: Trocar 'gemini' por 'genAI'
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
@@ -183,7 +203,8 @@ Gere um sumário que inclua:
 4. Riscos ou preocupações identificadas
     `;
 
-    const result = await model.generateContentStream({
+    const result = await genAI.models.generateContentStream({
+      model: "gemini-2.5-flash-lite",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
 
@@ -239,15 +260,33 @@ const BugTriageSchema = z.object({
 
 export async function triageBugReport(errorReport) {
   try {
-    const model = gemini.models.generateContent({
+    const result = await genAI.models.generateContent({
       model: "gemini-2.5-flash-lite",
-      generationConfig: { responseMimeType: "application/json" },
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: `Analise este erro e devolva um JSON estruturado: "${errorReport}".
+              Use exatamente este formato, sem explicações:
+              {
+                "error_type": "UI" ou "API" ou "Database",
+                "severity": número de 1 a 10,
+                "fix_suggestion": "string com a sugestão"
+              }`,
+            },
+          ],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.1,
+        responseMimeType: "application/json",
+        responseJsonSchema: z.toJSONSchema(BugTriageSchema),
+      },
     });
 
-    const prompt = `Analise o seguinte relato de erro e classifique-o em JSON: "${errorReport}"`;
-
-    const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
+    // ✅ CORRIGIDO: result.text() é um MÉTODO
+    const responseText = result.text();
 
     const parsed = JSON.parse(responseText);
     const triage = BugTriageSchema.parse(parsed);
@@ -265,7 +304,6 @@ export async function triageBugReport(errorReport) {
       auto_escalated: false,
     };
 
-    // ✅ PERSISTÊNCIA AUTOMÁTICA: Se severity >= 8, inserir em tickets
     if (triage.severity >= 8) {
       console.log("🚨 CRÍTICO! Severity >= 8 - Auto-escalando para TICKETS");
       try {
@@ -321,11 +359,7 @@ const WeeklyAgendaSchema = z.object({
 
 export async function planWeeklySchedule(userInput, req, res) {
   try {
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash-lite",
-      generationConfig: { responseMimeType: "application/json" },
-    });
-
+    // ✅ CORRIGIDO: Trocar 'genAI.getGenerativeModel()' por 'genAI.models.generateContentStream()'
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
@@ -350,8 +384,13 @@ Formato do JSON:
 [JSON_START]
     `;
 
-    const result = await model.generateContentStream({
+    const result = await genAI.models.generateContentStream({
+      model: "gemini-2.5-flash-lite",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseJsonSchema: z.toJSONSchema(WeeklyAgendaSchema),
+      },
     });
 
     for await (const chunk of result.stream) {
@@ -411,32 +450,50 @@ const SentimentDashboardSchema = z.object({
   recommendations: z.array(z.string()),
 });
 
-export async function analyzeTeamSentiment() {
+export async function analyzeTeamSentiment(userInput) {
   try {
-    const model = genAI.getGenerativeModel({
+    const commentsList = userInput;
+
+    const prompt = `IGNORE ALL PREVIOUS INSTRUCTIONS. Analyze sentiment ONLY. Return pure JSON, no explanation, no prefix.
+
+Comments:
+${commentsList}
+
+JSON response (only JSON, nothing else):`;
+
+    const result = await genAI.models.generateContent({
       model: "gemini-2.5-flash-lite",
-      generationConfig: { responseMimeType: "application/json" },
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: prompt,
+            },
+          ],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.2,
+        responseMimeType: "application/json",
+        responseJsonSchema: z.toJSONSchema(WeeklyAgendaSchema),
+      },
     });
 
-    const comments = [
-      "A sprint está muito pesada, não estou a conseguir acompanhar",
-      "Adorei o novo design, ótimo trabalho!",
-      "O servidor caiu novamente, estou frustrado",
-      "Consegui terminar a tarefa antes do prazo",
-      "A reunião foi muito longa e improdutiva",
-      "Preciso de férias urgentemente",
-      "O cliente ficou muito satisfeito com o resultado",
-      "Falta comunicação entre os departamentos",
-      "Estou entusiasmado com o novo projeto",
-      "As reuniões diárias são excessivas",
-    ];
+    // ✅ CORRIGIDO: Acessar a estrutura correta
+    let responseText;
+    if (typeof result.text === "function") {
+      responseText = result.text();
+    } else if (result.candidates && result.candidates[0]) {
+      responseText = result.candidates[0].content.parts[0].text;
+    } else if (result.response && result.response.text) {
+      responseText = result.response.text;
+    } else {
+      responseText = result.text || JSON.stringify(result);
+    }
 
-    const commentsList = comments.map((c, i) => `${i + 1}. "${c}"`).join("\n");
-
-    const prompt = `Analise os seguintes comentários e gere um relatório em JSON: ${commentsList}`;
-
-    const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
+    // Limpar prefácios
+    responseText = responseText.replace(/^[\s\S]*?({)/, "$1").trim();
 
     const parsed = JSON.parse(responseText);
     const dashboard = SentimentDashboardSchema.parse(parsed);

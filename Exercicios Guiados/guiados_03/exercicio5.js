@@ -4,7 +4,10 @@
  */
 
 import { GoogleGenAI } from "@google/genai";
-import { z } from "zod";
+import * as z from "zod";
+import dotenv from "dotenv";
+
+dotenv.config({ path: "../../.env" });
 
 const genAI = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
@@ -25,6 +28,8 @@ const WeeklyAgendaSchema = z.object({
   schedule: z.array(ScheduleItemSchema),
   insights: z.string(),
 });
+
+const schema = z.toJSONSchema(WeeklyAgendaSchema);
 
 export async function planWeeklySchedule(userInput, req, res) {
   try {
@@ -62,6 +67,8 @@ export async function planWeeklySchedule(userInput, req, res) {
       ],
       generationConfig: {
         temperature: 0.3,
+        responseMimeType: "application/json",
+        responseJsonSchema: schema,
       },
     });
 

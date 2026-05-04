@@ -8,8 +8,8 @@ export default function ChatInput({ onSend, placeholder = "Pergunte qualquer coi
 
   const handleSend = () => {
     if (!value.trim()) return;
-    onSend(value);
-    setValue("");
+    onSend(value);  // ✅ Apenas chama a prop
+    setValue("");   // ✅ Limpa o input
   };
 
   return (

@@ -1,75 +1,112 @@
 import { useState } from "react";
-import ExercisesPanel from "@/components/ExercisesPanel";
+import { motion } from "framer-motion";
 import { useTheme } from "@/context/ThemeContext";
+import MessageList from "@/components/MessageList";
+import ChatInput from "@/components/ChatUI";
 
-export default function LabsContainer({ EXERCISES_DATA }) {
+export default function Lab03Panel({ selectedExercise, onBack }) {
   const { theme } = useTheme();
-  const [selectedExercise, setSelectedExercise] = useState(null);
-  
-  // Define o primeiro Lab disponível como inicial
-  const labsKeys = Object.keys(EXERCISES_DATA);
-  const [activeLab, setActiveLab] = useState(labsKeys[0]);
+  const [messages, setMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const isDark = theme === "dark";
 
-  // CORREÇÃO: Função para achatar a estrutura aninhada (parte01, parte02...)
-  const getFlatExercises = (labKey) => {
-    if (!EXERCISES_DATA[labKey]) return [];
-    // Acedemos ao primeiro objeto do array e juntamos todas as suas partes
-    const labContent = EXERCISES_DATA[labKey][0]; 
-    return Object.values(labContent).flat();
+  if (!selectedExercise) return null;
+
+  const handleSend = async (text) => {
+    console.log("📤 User enviou:", text);
+    console.log("🎯 Exercise action:", selectedExercise.action);
+    
+    if (!text.trim() || !selectedExercise.action) {
+      console.error("❌ Texto vazio ou action inexistente");
+      return;
+    }
+
+    setMessages(prev => [...prev, { role: "user", content: text }]);
+    setIsLoading(true);
+    let fullResponse = "";
+
+    try {
+      if (selectedExercise.badge === "Streaming") {
+        console.log("⏳ Streaming iniciado...");
+        const stream = await selectedExercise.action(text);
+        
+        for await (const chunk of stream) {
+          console.log("📥 Chunk recebido:", chunk);
+          if (chunk.chunk) {
+            fullResponse += chunk.chunk;
+            setMessages(prev => {
+              const lastMsg = prev[prev.length - 1];
+              if (lastMsg?.role === "bot") {
+                return [...prev.slice(0, -1), { role: "bot", content: fullResponse }];
+              }
+              return [...prev, { role: "bot", content: fullResponse }];
+            });
+          }
+          if (chunk.error) {
+            throw new Error(chunk.error);
+          }
+          if (chunk.status === "completed") {
+            if (chunk.fullResponse) fullResponse = chunk.fullResponse;
+            if (chunk.full_summary) fullResponse = chunk.full_summary;
+            if (chunk.agenda) fullResponse = `📋 Agenda Semanal:\n${JSON.stringify(chunk.agenda, null, 2)}`;
+          }
+        }
+      } else {
+        console.log("📦 JSON iniciado...");
+        const result = await selectedExercise.action(text);
+        console.log("✅ Resultado:", result);
+        fullResponse = `✅ Resultado:\n${JSON.stringify(result, null, 2)}`;
+        setMessages(prev => [...prev, { role: "bot", content: fullResponse }]);
+      }
+    } catch (error) {
+      console.error("❌ Erro:", error);
+      const errorMsg = `❌ Erro: ${error.message || "Falha ao processar"}`;
+      setMessages(prev => [...prev, { role: "bot", content: errorMsg }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className={`min-h-screen ${theme === "dark" ? "bg-[#0d0d0d] text-white" : "bg-gray-50 text-black"}`}>
-      
-      {/* Menu de Tabs */}
-      <div className={`flex gap-2 p-6 overflow-x-auto border-b ${theme === "dark" ? "border-gray-800" : "border-gray-200"}`}>
-        {labsKeys.map((labKey) => (
-          <button
-            key={labKey}
-            onClick={() => {
-              setActiveLab(labKey);
-              setSelectedExercise(null);
-            }}
-            className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition ${
-              activeLab === labKey
-                ? "bg-blue-600 text-white"
-                : theme === "dark" ? "bg-gray-800 text-gray-400" : "bg-white text-gray-500 border border-gray-200"
-            }`}
-          >
-            {labKey}
-          </button>
-        ))}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className={`h-full flex flex-col ${isDark ? "bg-[#0d0d0d]" : "bg-gray-50"}`}
+    >
+      {/* Header do Exercício */}
+      <div
+        className={`px-6 py-4 border-b flex items-center gap-4 ${
+          isDark ? "bg-[#111] border-gray-800" : "bg-white border-gray-200"
+        }`}
+      >
+        <button
+          onClick={onBack}
+          className="p-2 hover:bg-blue-500/10 rounded-full text-blue-500 transition"
+        >
+          ←
+        </button>
+        <div>
+          <p className="opacity-50 text-xs uppercase font-bold tracking-tighter">
+            Lab 03
+          </p>
+          <p className={`font-bold ${isDark ? "text-white" : "text-black"}`}>
+            {selectedExercise.title}
+          </p>
+          <p className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+            {selectedExercise.description}
+          </p>
+        </div>
       </div>
 
-      {/* Renderização dos Exercícios */}
-      <ExercisesPanel
-        exercises={getFlatExercises(activeLab)} // Passa o array plano corrigido
-        selectedExercise={selectedExercise}
-        onSelectExercise={setSelectedExercise}
-        theme={theme}
-      />
-
-      {/* Interface de Ação */}
-      {selectedExercise && (
-        <div className={`p-8 mt-4 border-t ${theme === "dark" ? "border-gray-800" : "border-gray-200"}`}>
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-2xl font-black mb-4">
-              {selectedExercise.title}
-            </h2>
-            <p className="text-gray-500 mb-6">{selectedExercise.description}</p>
-            
-            <textarea
-              className={`w-full p-4 rounded-xl border-2 outline-none transition-all ${
-                theme === "dark" 
-                  ? "bg-[#1a1a1a] border-gray-800 focus:border-blue-500" 
-                  : "bg-white border-gray-200 focus:border-blue-400"
-              }`}
-              rows="4"
-              placeholder={selectedExercise.placeholder}
-            />
-          </div>
-        </div>
-      )}
-    </div>
+      {/* Área de Chat */}
+      <div className="flex-1 overflow-hidden relative flex flex-col">
+        <MessageList messages={messages} isTyping={isLoading} />
+        <ChatInput
+          onSend={handleSend}
+          placeholder={selectedExercise.placeholder || "Envie uma mensagem..."}
+        />
+      </div>
+    </motion.div>
   );
 }
