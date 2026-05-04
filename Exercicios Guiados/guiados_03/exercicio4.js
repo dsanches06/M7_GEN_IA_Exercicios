@@ -1,29 +1,44 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
 
-// Schema para resposta da IA (Mantemos o Zod para validação de dados)
 const BugTriageSchema = z.object({
   error_type: z.enum(["UI", "API", "Database"]),
   severity: z.number().min(1).max(10),
   fix_suggestion: z.string(),
 });
 
-// ❌ REMOVIDO: type BugTriage = z.infer<typeof BugTriageSchema>;
-
 export async function triageBugReport(errorReport) {
   try {
-    const model = genAI.getGenerativeModel({ 
+    const result = await genAI.models.generateContent({
       model: "gemini-2.5-flash-lite",
-      generationConfig: { responseMimeType: "application/json" } // Garante resposta JSON
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: `Analise este erro e devolva um JSON estruturado: "${errorReport}".
+              Use exatamente este formato:
+              {
+                "error_type": "UI" | "API" | "Database",
+                "severity": (número de 1 a 10),
+                "fix_suggestion": "string"
+              }`
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.1,
+        responseMimeType: "application/json"
+      },
     });
 
-    const prompt = `Analise o seguinte relato de erro e classifique-o em JSON: "${errorReport}"`;
-
-    const result = await model.generateContent(prompt);
     const responseText = result.response.text();
-    
+
     const parsed = JSON.parse(responseText);
     const triage = BugTriageSchema.parse(parsed);
 
@@ -36,14 +51,15 @@ export async function triageBugReport(errorReport) {
         priority: "CRITICAL",
         auto_escalated: true
       };
-    } else {
-      console.log("⚠️ Gravidade moderada");
-      return {
-        ...triage,
-        priority: triage.severity >= 5 ? "HIGH" : "NORMAL",
-        auto_escalated: false
-      };
     }
+
+    console.log("⚠️ Gravidade moderada");
+    return {
+      ...triage,
+      priority: triage.severity >= 5 ? "HIGH" : "NORMAL",
+      auto_escalated: false
+    };
+
   } catch (error) {
     console.error("❌ Erro no triage:", error.message);
     throw error;
@@ -62,7 +78,7 @@ export function setupBugTriageRoutes(app) {
       const result = await triageBugReport(error_report);
       res.json(result);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Erro ao processar o relatório de bug" });
     }
   });
 }

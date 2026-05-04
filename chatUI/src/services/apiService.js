@@ -1,17 +1,22 @@
 /**
- * 🔌 API Service - ClickBot GenAI Backend
+ * 🔌 API Service - ClickBot Gemini Backend
  * Comunicação com endpoints REST do backend
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-// ✅ EXERCÍCIO 1: Chat de Suporte com Stream
-export async function chatWithStream(message) {
-  const response = await fetch(
-    `${API_BASE_URL}/exercises/chat?message=${encodeURIComponent(message)}`
-  );
+/**
+ * ✅ Utilitário para leitura de streams SSE
+ */
+async function createStreamIterator(response, errorMessage) {
+  if (!response.ok) {
+    throw new Error(errorMessage);
+  }
 
-  if (!response.ok) throw new Error("Erro ao conectar chat");
+  if (!response.body) {
+    throw new Error("Stream não suportado pelo navegador");
+  }
 
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
@@ -19,20 +24,29 @@ export async function chatWithStream(message) {
   return {
     async *[Symbol.asyncIterator]() {
       try {
+        let buffer = "";
+
         while (true) {
           const { done, value } = await reader.read();
+
           if (done) break;
 
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n");
+          buffer += decoder.decode(value, { stream: true });
+
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
 
           for (const line of lines) {
             if (line.startsWith("data: ")) {
+              const jsonData = line.slice(6).trim();
+
+              if (!jsonData) continue;
+
               try {
-                const data = JSON.parse(line.slice(6));
+                const data = JSON.parse(jsonData);
                 yield data;
-              } catch (e) {
-                // Ignorar linhas inválidas
+              } catch (error) {
+                console.error("Erro ao processar stream:", error);
               }
             }
           }
@@ -44,15 +58,46 @@ export async function chatWithStream(message) {
   };
 }
 
-// ✅ EXERCÍCIO 2: Parse Task (NLP para JSON)
-export async function parseTask(text) {
-  const response = await fetch(`${API_BASE_URL}/exercises/parse-task`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text }),
+// ✅ EXERCÍCIO 1: Chat de Suporte com Stream (Gemini)
+export async function chatWithStream(message, conversationId = null) {
+  const params = new URLSearchParams({
+    message,
   });
 
-  if (!response.ok) throw new Error("Erro ao fazer parse da tarefa");
+  if (conversationId) {
+    params.set("conversation_id", String(conversationId));
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/exercises/chat?${params.toString()}`,
+    {
+      method: "GET",
+      headers: {
+        Accept: "text/event-stream",
+      },
+    }
+  );
+
+  return createStreamIterator(response, "Erro ao conectar ao chat Gemini");
+}
+
+// ✅ EXERCÍCIO 2: Parse Task (NLP para JSON)
+export async function parseTask(text) {
+  const response = await fetch(
+    `${API_BASE_URL}/exercises/parse-task`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ text }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Erro ao fazer parse da tarefa");
+  }
+
   return response.json();
 }
 
@@ -62,53 +107,42 @@ export async function transcribeMeeting(notes, projectId = 1) {
     `${API_BASE_URL}/exercises/meetings/transcribe`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ notes, project_id: projectId }),
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "text/event-stream",
+      },
+      body: JSON.stringify({
+        notes,
+        project_id: projectId,
+      }),
     }
   );
 
-  if (!response.ok) throw new Error("Erro ao transcrever reunião");
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-
-  return {
-    async *[Symbol.asyncIterator]() {
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n");
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              try {
-                const data = JSON.parse(line.slice(6));
-                yield data;
-              } catch (e) {
-                // Ignorar
-              }
-            }
-          }
-        }
-      } finally {
-        reader.releaseLock();
-      }
-    },
-  };
+  return createStreamIterator(
+    response,
+    "Erro ao transcrever reunião"
+  );
 }
 
 // ✅ EXERCÍCIO 4: Bug Triage
 export async function triageBug(errorReport) {
-  const response = await fetch(`${API_BASE_URL}/exercises/bugs/triage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ error_report: errorReport }),
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/exercises/bugs/triage`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        error_report: errorReport,
+      }),
+    }
+  );
 
-  if (!response.ok) throw new Error("Erro no triage do bug");
+  if (!response.ok) {
+    throw new Error("Erro no triage do bug");
+  }
+
   return response.json();
 }
 
@@ -118,50 +152,35 @@ export async function planWeekly(tasks) {
     `${API_BASE_URL}/exercises/planner/weekly`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "text/event-stream",
+      },
       body: JSON.stringify({ tasks }),
     }
   );
 
-  if (!response.ok) throw new Error("Erro ao planejar semana");
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-
-  return {
-    async *[Symbol.asyncIterator]() {
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n");
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              try {
-                const data = JSON.parse(line.slice(6));
-                yield data;
-              } catch (e) {
-                // Ignorar
-              }
-            }
-          }
-        }
-      } finally {
-        reader.releaseLock();
-      }
-    },
-  };
+  return createStreamIterator(
+    response,
+    "Erro ao planejar semana"
+  );
 }
 
 // ✅ EXERCÍCIO 6: Sentiment Dashboard
 export async function getSentimentDashboard() {
   const response = await fetch(
-    `${API_BASE_URL}/exercises/dashboard/sentiment`
+    `${API_BASE_URL}/exercises/dashboard/sentiment`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
   );
 
-  if (!response.ok) throw new Error("Erro ao obter sentimento");
+  if (!response.ok) {
+    throw new Error("Erro ao obter sentimento");
+  }
+
   return response.json();
 }

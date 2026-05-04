@@ -3,21 +3,16 @@
  * Stream de raciocínio + JSON estruturado da agenda
  */
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
 
-// Schema para agenda estruturada (Zod continua aqui para validação lógica)
 const ScheduleItemSchema = z.object({
   day: z.enum([
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
+    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
   ]),
   time: z.string(),
   task: z.string(),
@@ -31,15 +26,9 @@ const WeeklyAgendaSchema = z.object({
   insights: z.string(),
 });
 
-// ❌ REMOVIDO: type WeeklyAgenda = z.infer<typeof WeeklyAgendaSchema>;
-
 export async function planWeeklySchedule(userInput, req, res) {
   try {
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash-lite",
-      generationConfig: { responseMimeType: "application/json" },
-    });
-
+    // Configuração de headers SSE
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
@@ -47,69 +36,63 @@ export async function planWeeklySchedule(userInput, req, res) {
     let fullResponse = "";
 
     const prompt = `
-O utilizador quer organizar a sua semana: "${userInput}"
+      O utilizador quer organizar a sua semana: "${userInput}"
 
-Gere uma resposta com:
-1. Explicação do raciocínio
-2. Uma agenda estruturada em JSON
+      Gere uma resposta com:
+      1. Explicação do raciocínio
+      2. Uma agenda estruturada em JSON
 
-Termine a sua resposta estritamente com o JSON entre as tags [JSON_START] e [JSON_END].
-Formato do JSON:
-{
-  "reasoning": "string",
-  "schedule": [{"day": "Monday", "time": "HH:MM", "task": "string", "duration_hours": number, "priority": "high|medium|low"}],
-  "insights": "string"
-}
-
-[JSON_START]
+      Importante: Coloque o JSON final entre as tags [JSON_START] e [JSON_END].
+      Formato esperado:
+      {
+        "reasoning": "string",
+        "schedule": [{"day": "Monday", "time": "HH:MM", "task": "string", "duration_hours": 1, "priority": "high"}],
+        "insights": "string"
+      }
     `;
 
-    const result = await model.generateContentStream({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
+    // Implementação seguindo o padrão da escola
+    const result = await genAI.models.generateContentStream({
+      model: "gemini-2.5-flash-lite",
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: prompt }],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.3,
+      },
     });
 
     for await (const chunk of result.stream) {
       const chunkText = chunk.text();
       fullResponse += chunkText;
+
       res.write(`data: ${JSON.stringify({ chunk: chunkText })}\n\n`);
     }
 
-    // Extrair JSON da resposta
-    const jsonMatch = fullResponse.match(
-      /\[JSON_START\]([\s\S]*?)\[JSON_END\]/,
-    );
+    // Extrair JSON usando Regex
+    const jsonMatch = fullResponse.match(/\[JSON_START\]([\s\S]*?)\[JSON_END\]/);
 
     if (jsonMatch) {
       try {
         const rawJson = jsonMatch[1].trim();
         const scheduleJson = JSON.parse(rawJson);
-
-        // Validação opcional com Zod para garantir integridade
         const validated = WeeklyAgendaSchema.parse(scheduleJson);
 
-        res.write(
-          `data: ${JSON.stringify({
-            status: "completed",
-            agenda: validated,
-          })}\n\n`,
-        );
+        res.write(`data: ${JSON.stringify({ status: "completed", agenda: validated })}\n\n`);
       } catch (parseError) {
-        console.error("Erro ao parsear JSON:", parseError);
-        res.write(
-          `data: ${JSON.stringify({ status: "error", message: "Erro no formato JSON" })}\n\n`,
-        );
+        console.error("Erro no parse do JSON:", parseError);
+        res.write(`data: ${JSON.stringify({ status: "error", message: "JSON inválido gerado pela IA" })}\n\n`);
       }
     }
 
     res.end();
   } catch (error) {
     console.error("Erro no planner:", error);
-    if (!res.headersSent) {
-      res.status(500).json({ error: error.message });
-    } else {
-      res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
-      res.end();
-    }
+    res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+    res.end();
   }
 }
 

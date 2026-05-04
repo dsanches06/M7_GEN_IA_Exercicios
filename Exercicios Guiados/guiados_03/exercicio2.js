@@ -1,11 +1,13 @@
 /**
  * Exercício 2: Smart Task Parser (NLP para JSON)
- * Parse de mensagens informais em tarefas estruturadas
+ * Adaptado para a sintaxe: genAI.models.generateContent
  */
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai"; // Mantendo conforme o teu exemplo
 import { z } from "zod";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
 
 const TaskSchema = z.object({
   title: z.string(),
@@ -14,25 +16,43 @@ const TaskSchema = z.object({
   department: z.enum(["design", "dev", "marketing"]),
 });
 
-export async function parseTaskFromNaturalLanguage(userMessage) {
+async function parseTaskFromNaturalLanguage(userMessage) {
   try {
-    const model = genAI.getGenerativeModel({
+    // Seguindo o padrão genAI.models.generateContent
+    const result = await genAI.models.generateContent({
       model: "gemini-2.5-flash-lite",
-      // Força o modelo a responder apenas em JSON
-      generationConfig: { responseMimeType: "application/json" },
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: `Extraia os dados da tarefa em JSON da seguinte mensagem: "${userMessage}". 
+              Campos obrigatórios: 
+              - title: string
+              - due_date: string
+              - priority: obrigatoriamente um destes (urgent, high, normal, low)
+              - department: obrigatoriamente um destes (design, dev, marketing)
+              
+              Responde apenas o JSON puro, sem markdown ou explicações.`,
+            },
+          ],
+        },
+      ],
+      generationConfig: { 
+        temperature: 0.1, // Menor temperatura para maior precisão no JSON
+        responseMimeType: "application/json" 
+      },
     });
 
-    const prompt = `Extraia os dados da tarefa em JSON: "${userMessage}". 
-    Use o schema: {title, due_date, priority, department}`;
-
-    const result = await model.generateContent(prompt);
-    const responseText = result.response.candidates[0].content.parts[0].text;
+    // No padrão que mostraste, acedemos ao texto assim:
+    const responseText = result.response.text();
 
     // Validar e transformar
     const parsed = JSON.parse(responseText);
     return TaskSchema.parse(parsed);
+
   } catch (error) {
-    console.error("❌ Erro:", error.message);
+    console.error("❌ Erro no Parser:", error.message);
     throw error;
   }
 }

@@ -96,5 +96,5 @@ app.use("/tickets", ticketRoutes);
 /* Iniciar o servidor */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Servidor ClickUp API em http://localhost:${PORT}`);
+  console.log(`🚀 ClickBot v3 (@google/genai) em http://localhost:${PORT}`);
 });

@@ -1,6 +1,6 @@
 import { useTheme } from "@/context/ThemeContext";
 
-export default function HeaderUI({ onNewChat }) {
+export default function HeaderUI({ onNewChat, onToggleHistory }) {
   const { theme, toggleTheme } = useTheme();
 
   return (
@@ -8,6 +8,7 @@ export default function HeaderUI({ onNewChat }) {
       <div className="flex items-center gap-1">
         {/* 1. Ícone de Histórico */}
         <button
+          onClick={onToggleHistory}
           className={`p-2 rounded-lg transition-colors ${theme === "dark" ? "hover:bg-white/10 text-[#b4b4b4]" : "hover:bg-black/10 text-gray-600"}`}
         >
           <svg

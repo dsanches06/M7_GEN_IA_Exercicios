@@ -4,14 +4,18 @@
  * Integrado com Services da Database
  */
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 import * as chatHistoryService from "./chatHistoryService.js";
 import * as conversationService from "./conversationService.js";
 import * as meetingSummaryService from "./meetingSummaryService.js";
 import * as ticketService from "./ticketService.js";
+import dotenv from "dotenv";
+dotenv.config({ path: "../../.env" });
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
 
 // ============================================================
 // EXERCÍCIO 1: Chat de Suporte com Stream
@@ -19,13 +23,27 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export async function chatSuportWithStream(userMessage, req, res) {
   try {
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
+    const model = await genAI.models({
+      model: "gemini-2.5-flash-lite",
     });
 
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
+
+    const conversationId = req.query.conversation_id
+      ? Number(req.query.conversation_id)
+      : null;
+
+    let conversation = null;
+
+    if (conversationId) {
+      conversation =
+        await conversationService.getConversationById(conversationId);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversa não encontrada" });
+      }
+    }
 
     let fullResponse = "";
 
@@ -55,10 +73,11 @@ export async function chatSuportWithStream(userMessage, req, res) {
 
     // ✅ PERSISTÊNCIA: Salvar na BD após stream terminar
     try {
-      // Criar ou recuperar conversação
-      const conversation = await conversationService.createConversation({
-        title: `Chat Support - ${new Date().toISOString()}`,
-      });
+      if (!conversation) {
+        conversation = await conversationService.createConversation({
+          title: `Chat Support - ${new Date().toISOString()}`,
+        });
+      }
 
       // Salvar mensagem do utilizador (role_id = 2 = USER)
       await chatHistoryService.createChatHistory({
@@ -80,13 +99,13 @@ export async function chatSuportWithStream(userMessage, req, res) {
     }
 
     res.write(
-      `data: ${JSON.stringify({ status: "completed", fullResponse })}\n\n`
+      `data: ${JSON.stringify({ status: "completed", fullResponse })}\n\n`,
     );
     res.end();
   } catch (error) {
     console.error("Erro no chat com stream:", error);
     res.write(
-      `data: ${JSON.stringify({ error: "Erro ao processar resposta" })}\n\n`
+      `data: ${JSON.stringify({ error: "Erro ao processar resposta" })}\n\n`,
     );
     res.end();
   }
@@ -105,7 +124,7 @@ const TaskSchema = z.object({
 
 export async function parseTaskFromNaturalLanguage(userMessage) {
   try {
-    const model = genAI.getGenerativeModel({
+    const model = gemini.models.generateContent({
       model: "gemini-2.5-flash-lite",
       generationConfig: { responseMimeType: "application/json" },
     });
@@ -132,10 +151,10 @@ export async function transcribeMeetingWithStream(
   meetingNotes,
   projectId,
   req,
-  res
+  res,
 ) {
   try {
-    const model = genAI.getGenerativeModel({
+    const model = gemini.models.generateContent({
       model: "gemini-2.5-flash-lite",
     });
 
@@ -147,7 +166,7 @@ export async function transcribeMeetingWithStream(
       `data: ${JSON.stringify({
         status: "processing",
         message: "A processar pontos chave...",
-      })}\n\n`
+      })}\n\n`,
     );
 
     let fullSummary = "";
@@ -194,7 +213,7 @@ Gere um sumário que inclua:
         status: "completed",
         message: "Sumário gerado e salvo com sucesso",
         full_summary: fullSummary,
-      })}\n\n`
+      })}\n\n`,
     );
     res.end();
   } catch (error) {
@@ -220,7 +239,7 @@ const BugTriageSchema = z.object({
 
 export async function triageBugReport(errorReport) {
   try {
-    const model = genAI.getGenerativeModel({
+    const model = gemini.models.generateContent({
       model: "gemini-2.5-flash-lite",
       generationConfig: { responseMimeType: "application/json" },
     });
@@ -237,7 +256,12 @@ export async function triageBugReport(errorReport) {
 
     let response = {
       ...triage,
-      priority: triage.severity >= 8 ? "CRITICAL" : triage.severity >= 5 ? "HIGH" : "NORMAL",
+      priority:
+        triage.severity >= 8
+          ? "CRITICAL"
+          : triage.severity >= 5
+            ? "HIGH"
+            : "NORMAL",
       auto_escalated: false,
     };
 
@@ -252,7 +276,9 @@ export async function triageBugReport(errorReport) {
           fix_suggestion: triage.fix_suggestion,
           status: "open",
         });
-        console.log(`✅ Ticket criado automaticamente (ticket_id: ${ticket.id})`);
+        console.log(
+          `✅ Ticket criado automaticamente (ticket_id: ${ticket.id})`,
+        );
         response.ticket_id = ticket.id;
         response.auto_escalated = true;
       } catch (dbError) {
@@ -335,7 +361,7 @@ Formato do JSON:
     }
 
     const jsonMatch = fullResponse.match(
-      /\[JSON_START\]([\s\S]*?)\[JSON_END\]/
+      /\[JSON_START\]([\s\S]*?)\[JSON_END\]/,
     );
 
     if (jsonMatch) {
@@ -349,7 +375,7 @@ Formato do JSON:
           `data: ${JSON.stringify({
             status: "completed",
             agenda: validated,
-          })}\n\n`
+          })}\n\n`,
         );
       } catch (parseError) {
         console.error("Erro ao parsear JSON:", parseError);
@@ -357,7 +383,7 @@ Formato do JSON:
           `data: ${JSON.stringify({
             status: "error",
             message: "Erro no formato JSON",
-          })}\n\n`
+          })}\n\n`,
         );
       }
     }
@@ -405,9 +431,7 @@ export async function analyzeTeamSentiment() {
       "As reuniões diárias são excessivas",
     ];
 
-    const commentsList = comments
-      .map((c, i) => `${i + 1}. "${c}"`)
-      .join("\n");
+    const commentsList = comments.map((c, i) => `${i + 1}. "${c}"`).join("\n");
 
     const prompt = `Analise os seguintes comentários e gere um relatório em JSON: ${commentsList}`;
 
@@ -420,15 +444,15 @@ export async function analyzeTeamSentiment() {
     const moodEmoji = { happy: "😊", stressed: "😰", neutral: "😐" };
 
     console.log(
-      `\n${moodEmoji[dashboard.team_mood]} Estado da Equipa: ${dashboard.team_mood.toUpperCase()}`
+      `\n${moodEmoji[dashboard.team_mood]} Estado da Equipa: ${dashboard.team_mood.toUpperCase()}`,
     );
     console.log(`⚠️ Principal Bloqueador: ${dashboard.main_blocker}`);
     console.log(
-      `🔴 Risco de Burnout: ${dashboard.burnout_risk ? "SIM" : "NÃO"}`
+      `🔴 Risco de Burnout: ${dashboard.burnout_risk ? "SIM" : "NÃO"}`,
     );
     console.log("📋 Recomendações:");
     dashboard.recommendations.forEach((rec, i) =>
-      console.log(`  ${i + 1}. ${rec}`)
+      console.log(`  ${i + 1}. ${rec}`),
     );
 
     return dashboard;
