@@ -341,7 +341,7 @@ export function mapChatHistoryDTOResponse(data) {
 export function mapConversationDTOResponse(data) {
   return {
     id: data.id,
-    content: data.content,
+    title: data.title,
     created_at: data.created_at,
   };
 } 
