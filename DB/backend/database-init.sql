@@ -455,10 +455,37 @@ INSERT INTO sprints (id, project_id, name, status_id, start_date, end_date) VALU
 INSERT INTO sprint_tasks (sprint_id, task_id) VALUES (1,1), (1,2), (1,4), (2,8), (2,9), (2,14);
 
 -- 3. COMENTÁRIOS, MENÇÕES E NOTIFICAÇÕES (Conforme solicitado)
-INSERT INTO comment (id, content, task_id, user_id) VALUES 
-(1, 'Ana, terminei a API. Podes testar?', 1, 4),
-(2, 'David, o JWT está configurado.', 2, 4),
-(3, 'Gina, o S3 já aceita uploads.', 11, 7);
+INSERT INTO comment (content, task_id, user_id, created_at, edited_at, resolved) VALUES
+
+('Não consigo concluir esta tarefa', 1, 1, NOW(), NULL, FALSE),
+('Já finalizei esta parte', 1, 2, NOW(), NOW(), TRUE),
+
+('Existe um bug nesta funcionalidade', 2, 3, NOW(), NULL, FALSE),
+('Corrigido, podem validar', 2, 4, NOW(), NOW(), TRUE),
+
+('Preciso de mais detalhes sobre este requisito', 3, 2, NOW(), NULL, FALSE),
+('Documentação atualizada', 3, 1, NOW(), NOW(), TRUE),
+
+('A API está a falhar neste ponto', 4, 3, NOW(), NULL, FALSE),
+('Erro identificado e corrigido', 4, 5, NOW(), NOW(), TRUE),
+
+('Interface não está responsiva', 5, 4, NOW(), NULL, FALSE),
+('Ajustei o CSS, verificar novamente', 5, 2, NOW(), NOW(), TRUE),
+
+('Problema ao guardar dados', 6, 1, NOW(), NULL, FALSE),
+('Resolvido após ajuste no backend', 6, 3, NOW(), NOW(), TRUE),
+
+('Erro ao fazer upload de ficheiros', 7, 2, NOW(), NULL, FALSE),
+('Limite de tamanho aumentado', 7, 4, NOW(), NOW(), TRUE),
+
+('Sistema muito lento nesta tarefa', 8, 5, NOW(), NULL, FALSE),
+('Implementado cache', 8, 1, NOW(), NOW(), TRUE),
+
+('Não tenho permissões para editar', 9, 3, NOW(), NULL, FALSE),
+('Permissões corrigidas', 9, 2, NOW(), NOW(), TRUE),
+
+('Erro na geração de relatório', 10, 4, NOW(), NULL, FALSE),
+('Query otimizada e corrigida', 10, 5, NOW(), NOW(), TRUE);
 
 INSERT INTO mentions (comment_id, mentioned_user_id) VALUES 
 (1, 1), -- David menciona Ana
@@ -503,3 +530,275 @@ INSERT INTO tags_task (task_id, tag_id) VALUES
 (13, 6),        -- Task 13: Infra
 (14, 6),        -- Task 14: Infra
 (15, 2);        -- Task 15: Backend
+
+
+INSERT INTO conversations (id, title, created_at) VALUES
+(1, 'Suporte Login', NOW()),
+(2, 'Erro API Pagamentos', NOW()),
+(3, 'Problema UI Dashboard', NOW()),
+(4, 'Bug Notificações', NOW()),
+(5, 'Ajuda Integração', NOW()),
+(6, 'Erro Base de Dados', NOW()),
+(7, 'Lentidão Sistema', NOW()),
+(8, 'Configuração Projeto', NOW()),
+(9, 'Erro Deploy', NOW()),
+(10, 'Suporte Mobile', NOW()),
+(11, 'Bug Filtros', NOW()),
+(12, 'Problema Upload', NOW()),
+(13, 'Erro Autenticação', NOW()),
+(14, 'UI Quebrada', NOW()),
+(15, 'Falha Email', NOW()),
+(16, 'Erro Permissões', NOW()),
+(17, 'Bug Relatórios', NOW()),
+(18, 'Problema Cache', NOW()),
+(19, 'Erro Integração API', NOW()),
+(20, 'Suporte Geral', NOW());
+
+INSERT INTO chat_history (conversation_id, role_id, content, sent_at) VALUES
+
+-- Conversa 1
+(1, 2, 'Não consigo fazer login', NOW()),
+(1, 3, 'Pode verificar se a senha está correta?', NOW()),
+(1, 2, 'Sim mas continua a falhar', NOW()),
+
+-- Conversa 2
+(2, 2, 'API de pagamentos está a dar erro 500', NOW()),
+(2, 3, 'Verifique os logs do servidor', NOW()),
+(2, 2, 'Já verifiquei, parece timeout', NOW()),
+
+-- Conversa 3
+(3, 2, 'O dashboard não carrega', NOW()),
+(3, 3, 'Pode limpar o cache?', NOW()),
+(3, 2, 'Já tentei, sem sucesso', NOW()),
+
+-- Conversa 4
+(4, 2, 'Não recebo notificações', NOW()),
+(4, 3, 'Verifique as configurações', NOW()),
+(4, 2, 'Está tudo ativo', NOW()),
+
+-- Conversa 5
+(5, 2, 'Preciso integrar com API externa', NOW()),
+(5, 3, 'Use token de autenticação', NOW()),
+(5, 2, 'Onde configuro isso?', NOW()),
+
+-- Conversa 6
+(6, 2, 'Erro ao conectar à base de dados', NOW()),
+(6, 3, 'Verifique a string de conexão', NOW()),
+(6, 2, 'Está correta', NOW()),
+
+-- Conversa 7
+(7, 2, 'Sistema está lento', NOW()),
+(7, 3, 'Pode ser carga alta', NOW()),
+(7, 2, 'Sim muitos utilizadores', NOW()),
+
+-- Conversa 8
+(8, 2, 'Como configuro projeto?', NOW()),
+(8, 3, 'Aceda às settings', NOW()),
+(8, 2, 'Ok obrigado', NOW()),
+
+-- Conversa 9
+(9, 2, 'Erro no deploy', NOW()),
+(9, 3, 'Verifique logs CI/CD', NOW()),
+(9, 2, 'Erro de build', NOW()),
+
+-- Conversa 10
+(10, 2, 'App mobile crasha', NOW()),
+(10, 3, 'Qual dispositivo?', NOW()),
+(10, 2, 'Android', NOW()),
+
+-- Conversas 11–20 (mesmo padrão)
+(11, 2, 'Filtro não funciona', NOW()),
+(11, 3, 'Atualize página', NOW()),
+(11, 2, 'Sem efeito', NOW()),
+
+(12, 2, 'Upload falha', NOW()),
+(12, 3, 'Formato do ficheiro?', NOW()),
+(12, 2, 'PDF', NOW()),
+
+(13, 2, 'Erro autenticação', NOW()),
+(13, 3, 'Token expirado?', NOW()),
+(13, 2, 'Sim', NOW()),
+
+(14, 2, 'UI está quebrada', NOW()),
+(14, 3, 'Qual browser?', NOW()),
+(14, 2, 'Chrome', NOW()),
+
+(15, 2, 'Emails não chegam', NOW()),
+(15, 3, 'Verifique SMTP', NOW()),
+(15, 2, 'Está ok', NOW()),
+
+(16, 2, 'Sem permissões', NOW()),
+(16, 3, 'Role correta?', NOW()),
+(16, 2, 'Não', NOW()),
+
+(17, 2, 'Relatórios falham', NOW()),
+(17, 3, 'Erro SQL?', NOW()),
+(17, 2, 'Sim', NOW()),
+
+(18, 2, 'Cache não limpa', NOW()),
+(18, 3, 'Reinicie serviço', NOW()),
+(18, 2, 'Funcionou', NOW()),
+
+(19, 2, 'API externa falha', NOW()),
+(19, 3, 'Timeout?', NOW()),
+(19, 2, 'Sim', NOW()),
+
+(20, 2, 'Preciso de ajuda geral', NOW()),
+(20, 3, 'Como posso ajudar?', NOW()),
+(20, 2, 'Configuração inicial', NOW());
+
+
+INSERT INTO meeting_summaries (project_id, original_text, summary, created_at) VALUES
+
+-- PROJECT 1: Portal E-learning
+(1, 'Discussão sobre login de alunos', 
+'Decisões: Melhorar autenticação.
+Tarefas: Backend rever login.
+Próximos passos: Testes.
+Riscos: Acesso bloqueado.', NOW()),
+
+(1, 'Problemas no carregamento de cursos',
+'Decisões: Otimizar queries.
+Tarefas: Backend melhorar performance.
+Próximos passos: Monitorização.
+Riscos: Má experiência.', NOW()),
+
+(1, 'Feedback de alunos sobre UI',
+'Decisões: Melhorar interface.
+Tarefas: Design ajustar layout.
+Próximos passos: Testes UX.
+Riscos: Baixa retenção.', NOW()),
+
+(1, 'Erro ao submeter exercícios',
+'Decisões: Corrigir backend.
+Tarefas: Dev ajustar API.
+Próximos passos: Deploy.
+Riscos: Perda de submissões.', NOW()),
+
+(1, 'Sistema de avaliações lento',
+'Decisões: Implementar cache.
+Tarefas: Backend usar Redis.
+Próximos passos: Testes.
+Riscos: Lentidão contínua.', NOW()),
+
+(1, 'Integração com vídeo falha',
+'Decisões: Rever integração.
+Tarefas: Corrigir player.
+Próximos passos: Testes.
+Riscos: Aulas indisponíveis.', NOW()),
+
+-- PROJECT 2: App Logística
+(2, 'Erro no tracking GPS',
+'Decisões: Melhorar precisão.
+Tarefas: Backend ajustar API GPS.
+Próximos passos: Testes campo.
+Riscos: Dados incorretos.', NOW()),
+
+(2, 'Falhas na sincronização de rotas',
+'Decisões: Implementar retry.
+Tarefas: Backend corrigir sync.
+Próximos passos: Monitorização.
+Riscos: Rotas perdidas.', NOW()),
+
+(2, 'App crasha em Android',
+'Decisões: Corrigir bug crítico.
+Tarefas: Mobile debug.
+Próximos passos: Update app.
+Riscos: Perda de utilizadores.', NOW()),
+
+(2, 'Performance baixa em mapas',
+'Decisões: Otimizar render.
+Tarefas: Mobile melhorar mapas.
+Próximos passos: Testes.
+Riscos: UX negativa.', NOW()),
+
+(2, 'Erro ao registar entregas',
+'Decisões: Rever backend.
+Tarefas: Corrigir API.
+Próximos passos: Deploy.
+Riscos: Dados inconsistentes.', NOW()),
+
+(2, 'Problema notificações motoristas',
+'Decisões: Rever push system.
+Tarefas: Corrigir notificações.
+Próximos passos: Testes.
+Riscos: Falha comunicação.', NOW()),
+
+(2, 'Tempo de resposta alto',
+'Decisões: Melhorar infra.
+Tarefas: Escalar servidores.
+Próximos passos: Monitorização.
+Riscos: Lentidão.', NOW()),
+
+-- PROJECT 3: Data Lake Cloud
+(3, 'Erro ingestão de dados',
+'Decisões: Rever pipeline.
+Tarefas: Data team corrigir ETL.
+Próximos passos: Testes.
+Riscos: Perda de dados.', NOW()),
+
+(3, 'Problemas no armazenamento S3',
+'Decisões: Ajustar permissões.
+Tarefas: DevOps corrigir IAM.
+Próximos passos: Auditoria.
+Riscos: Acesso indevido.', NOW()),
+
+(3, 'Custos AWS elevados',
+'Decisões: Otimizar recursos.
+Tarefas: Reduzir instâncias.
+Próximos passos: Monitorização.
+Riscos: Orçamento excedido.', NOW()),
+
+(3, 'Pipeline lento',
+'Decisões: Paralelizar jobs.
+Tarefas: Melhorar processamento.
+Próximos passos: Testes.
+Riscos: Atrasos.', NOW()),
+
+(3, 'Falha em jobs agendados',
+'Decisões: Rever scheduler.
+Tarefas: Corrigir cron jobs.
+Próximos passos: Monitorização.
+Riscos: Dados desatualizados.', NOW()),
+
+(3, 'Erro na validação de dados',
+'Decisões: Melhorar validação.
+Tarefas: Ajustar regras.
+Próximos passos: Testes.
+Riscos: Dados inválidos.', NOW()),
+
+(3, 'Dashboard não atualiza',
+'Decisões: Rever queries.
+Tarefas: Corrigir backend.
+Próximos passos: Deploy.
+Riscos: Informação incorreta.', NOW());
+
+INSERT INTO tickets (user_report, error_type, severity, fix_suggestion, status, created_at) VALUES
+
+-- 🔴 CRITICAL (auto-escalados)
+('Sistema crasha ao fazer login', 'API', 9, 'Rever autenticação e logs', 'open', NOW()),
+('Base de dados não responde', 'Database', 10, 'Verificar conexão e índices', 'open', NOW()),
+('API pagamentos retorna erro 500', 'API', 9, 'Implementar retries e logs', 'in_progress', NOW()),
+('Perda de dados ao guardar', 'Database', 10, 'Corrigir transações', 'open', NOW()),
+('Aplicação crasha no mobile', 'UI', 8, 'Debug crash logs Android', 'in_progress', NOW()),
+
+-- 🟠 HIGH
+('Dashboard demora muito a carregar', 'API', 7, 'Otimizar queries', 'in_progress', NOW()),
+('Erro ao gerar relatórios', 'Database', 6, 'Rever SQL', 'open', NOW()),
+('Upload de ficheiros falha', 'API', 7, 'Validar limites e tipos', 'closed', NOW()),
+('Filtros não funcionam corretamente', 'UI', 6, 'Corrigir lógica frontend', 'in_progress', NOW()),
+('Notificações não chegam', 'API', 7, 'Rever sistema push', 'open', NOW()),
+
+-- 🟡 NORMAL
+('Layout desalinhado em alguns ecrãs', 'UI', 4, 'Ajustar CSS', 'closed', NOW()),
+('Mensagem de erro pouco clara', 'UI', 3, 'Melhorar UX', 'closed', NOW()),
+('Tempo de resposta ligeiramente alto', 'API', 5, 'Otimizar endpoints', 'in_progress', NOW()),
+('Cache não está a funcionar corretamente', 'API', 5, 'Configurar Redis', 'open', NOW()),
+('Erro ao exportar dados', 'API', 5, 'Corrigir endpoint export', 'open', NOW()),
+
+-- 🟢 LOW
+('Texto com erro ortográfico', 'UI', 1, 'Corrigir texto', 'closed', NOW()),
+('Ícone desalinhado', 'UI', 2, 'Ajustar CSS', 'closed', NOW()),
+('Tooltip não aparece', 'UI', 2, 'Corrigir JS', 'closed', NOW()),
+('Cor incorreta em botão', 'UI', 1, 'Ajustar tema', 'closed', NOW()),
+('Espaçamento inconsistente', 'UI', 2, 'Refinar layout', 'closed', NOW());
