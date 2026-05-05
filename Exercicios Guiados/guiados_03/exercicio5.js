@@ -1,21 +1,22 @@
-/**
- * Exercício 5: Smart Planner Semanal
- * Stream de raciocínio + JSON estruturado da agenda
- */
-
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai"; // 1. SDK Correto
 import * as z from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import dotenv from "dotenv";
 
 dotenv.config({ path: "../../.env" });
 
-const genAI = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-});
+// 2. Inicialização correta (API Key direto no constructor ou via config)
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const ScheduleItemSchema = z.object({
   day: z.enum([
-    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
   ]),
   time: z.string(),
   task: z.string(),
@@ -29,70 +30,47 @@ const WeeklyAgendaSchema = z.object({
   insights: z.string(),
 });
 
-const schema = z.toJSONSchema(WeeklyAgendaSchema);
+const jsonSchema = zodToJsonSchema(WeeklyAgendaSchema);
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
 export async function planWeeklySchedule(userInput, req, res) {
   try {
-    // Configuração de headers SSE
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
 
     let fullResponse = "";
 
-    const prompt = `
-      O utilizador quer organizar a sua semana: "${userInput}"
+    // Prompt simplificado: O JSON Schema já define a estrutura, não precisas de tags manuais
+    const prompt = `Organiza a seguinte semana de trabalho: "${userInput}".
+    Explica o teu raciocínio no campo 'reasoning' e gera a agenda no campo 'schedule'.`;
 
-      Gere uma resposta com:
-      1. Explicação do raciocínio
-      2. Uma agenda estruturada em JSON
-
-      Importante: Coloque o JSON final entre as tags [JSON_START] e [JSON_END].
-      Formato esperado:
-      {
-        "reasoning": "string",
-        "schedule": [{"day": "Monday", "time": "HH:MM", "task": "string", "duration_hours": 1, "priority": "high"}],
-        "insights": "string"
-      }
-    `;
-
-    // Implementação seguindo o padrão da escola
-    const result = await genAI.models.generateContentStream({
-      model: "gemini-2.5-flash-lite",
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: prompt }],
-        },
-      ],
+    const result = await model.generateContentStream({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0.3,
         responseMimeType: "application/json",
-        responseJsonSchema: schema,
+        responseJsonSchema: jsonSchema, // O Gemini vai streamar o JSON aos poucos
       },
     });
 
     for await (const chunk of result.stream) {
       const chunkText = chunk.text();
       fullResponse += chunkText;
-
+      // Envia cada pedaço para o frontend
       res.write(`data: ${JSON.stringify({ chunk: chunkText })}\n\n`);
     }
 
-    // Extrair JSON usando Regex
-    const jsonMatch = fullResponse.match(/\[JSON_START\]([\s\S]*?)\[JSON_END\]/);
-
-    if (jsonMatch) {
-      try {
-        const rawJson = jsonMatch[1].trim();
-        const scheduleJson = JSON.parse(rawJson);
-        const validated = WeeklyAgendaSchema.parse(scheduleJson);
-
-        res.write(`data: ${JSON.stringify({ status: "completed", agenda: validated })}\n\n`);
-      } catch (parseError) {
-        console.error("Erro no parse do JSON:", parseError);
-        res.write(`data: ${JSON.stringify({ status: "error", message: "JSON inválido gerado pela IA" })}\n\n`);
-      }
+    // Validação final após o stream terminar
+    try {
+      const validated = WeeklyAgendaSchema.parse(JSON.parse(fullResponse));
+      res.write(
+        `data: ${JSON.stringify({ status: "completed", agenda: validated })}\n\n`,
+      );
+    } catch (e) {
+      res.write(
+        `data: ${JSON.stringify({ status: "partial_success", raw: fullResponse })}\n\n`,
+      );
     }
 
     res.end();

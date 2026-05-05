@@ -4,9 +4,9 @@ import * as conversationController from "../controllers/conversationController.j
 const router = express.Router();
 
 // CRUD Padrão
-router.get("/list", conversationController.getConversations);
+router.get("/", conversationController.getConversations);
 router.get("/:id", conversationController.getConversationById);
-router.post("/save", conversationController.createConversation);
+router.post("/", conversationController.createConversation);
 router.put("/:id", conversationController.updateConversation);
 router.delete("/:id", conversationController.deleteConversation);
 

@@ -5,6 +5,7 @@ const router = express.Router();
 
 // CRUD Padrão
 router.get("/", chatHistoryController.getChatHistories);
+router.get("/conversation/:conversationId", chatHistoryController.getChatHistoryByConversationId);
 router.get("/:id", chatHistoryController.getChatHistoryById);
 router.post("/save", chatHistoryController.createChatHistory);
 router.put("/:id", chatHistoryController.updateChatHistory);

@@ -1,13 +1,11 @@
-import { GoogleGenAI } from "@google/genai";
-import { response } from "express";
+import { GoogleGenerativeAI } from "@google/generative-ai"; // 1. SDK Correto
 import * as z from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import dotenv from "dotenv";
 
 dotenv.config({ path: "../../.env" });
 
-const genAI = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const BugTriageSchema = z.object({
   error_type: z.enum(["UI", "API", "Database"]),
@@ -15,24 +13,21 @@ const BugTriageSchema = z.object({
   fix_suggestion: z.string(),
 });
 
-const schema = z.toJSONSchema(BugTriageSchema);
+const schema = zodToJsonSchema(BugTriageSchema);
+
+const model = genAI.getGenerativeModel({
+  model: "gemini-2.5-flash-lite",
+});
 
 export async function triageBugReport(errorReport) {
   try {
-    const result = await genAI.models.generateContent({
-      model: "gemini-2.5-flash-lite",
+    const result = await model.generateContent({
       contents: [
         {
           role: "user",
           parts: [
             {
-              text: `Analise este erro e devolva um JSON estruturado: "${errorReport}".
-              Use exatamente este formato:
-              {
-                "error_type": "UI" | "API" | "Database",
-                "severity": (número de 1 a 10),
-                "fix_suggestion": "string"
-              }`,
+              text: `Analise este erro e devolva um JSON estruturado: "${errorReport}"`,
             },
           ],
         },
@@ -45,8 +40,8 @@ export async function triageBugReport(errorReport) {
     });
 
     const responseText = result.response.text();
-
     const parsed = JSON.parse(responseText);
+
     const triage = BugTriageSchema.parse(parsed);
 
     console.log("🐛 Triage do erro:", triage);

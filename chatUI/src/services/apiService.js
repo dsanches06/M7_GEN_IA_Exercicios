@@ -58,21 +58,25 @@ async function createStreamIterator(response, errorMessage) {
 }
 
 // ✅ EXERCÍCIO 1: Chat de Suporte com Stream
-// Recebe: mensagem do utilizador
+// Recebe: mensagem do utilizador e opcional conversation_id
 export async function chatWithStream(message, conversationId = null) {
-  const params = new URLSearchParams({ message });
+  const body = {
+    message,
+  };
 
   if (conversationId) {
-    params.set("conversation_id", String(conversationId));
+    body.conversation_id = conversationId;
   }
 
   const response = await fetch(
-    `${API_BASE_URL}/exercises/chat?${params.toString()}`,
+    `${API_BASE_URL}/exercises/chat`,
     {
-      method: "GET",
+      method: "POST",
       headers: {
+        "Content-Type": "application/json",
         Accept: "text/event-stream",
       },
+      body: JSON.stringify(body),
     },
   );
 
@@ -102,20 +106,36 @@ export async function parseTask(text) {
 }
 
 // ✅ EXERCÍCIO 3: Meeting Transcribe
-// Recebe: notas da reunião do utilizador
-export async function transcribeMeeting(notes, projectId = 1) {
+// Recebe: notas de texto OU áudio (com base64 e mimeType)
+export async function transcribeMeeting(input, projectId = 1) {
+  let body;
+  const headers = {
+    "Content-Type": "application/json",
+    Accept: "text/event-stream",
+  };
+
+  // Verificar se é áudio (objeto com audio e mimeType) ou texto
+  if (typeof input === "object" && input.audio) {
+    // Áudio em base64
+    body = JSON.stringify({
+      audio: input.audio,
+      mimeType: input.mimeType || "audio/wav",
+      project_id: projectId,
+    });
+  } else {
+    // Texto (notas)
+    body = JSON.stringify({
+      notes: input,
+      project_id: projectId,
+    });
+  }
+
   const response = await fetch(
     `${API_BASE_URL}/exercises/meetings/transcribe`,
     {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "text/event-stream",
-      },
-      body: JSON.stringify({
-        notes,
-        project_id: projectId,
-      }),
+      headers,
+      body,
     },
   );
 
@@ -156,11 +176,11 @@ export async function planWeekly(tasks) {
 }
 
 // ✅ EXERCÍCIO 6: Sentiment Dashboard
-// Recebe: comentários da equipa do utilizador
-export async function getSentimentDashboard(comments) {
-  // Pequena validação defensiva
-  if (!Array.isArray(comments) || comments.length === 0) {
-    throw new Error("É necessário fornecer uma lista de comentários.");
+// Recebe: texto com comentários/feedback da equipa
+export async function getSentimentDashboard(feedbackText) {
+  // Validação defensiva
+  if (!feedbackText || typeof feedbackText !== "string" || feedbackText.trim().length === 0) {
+    throw new Error("É necessário fornecer feedback ou comentários da equipa.");
   }
 
   const response = await fetch(
@@ -170,13 +190,33 @@ export async function getSentimentDashboard(comments) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ comments }),
+      body: JSON.stringify({ feedback: feedbackText.trim() }),
     },
   );
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.error || "Erro ao obter dashboard de sentimento");
+  }
+
+  return response.json();
+}
+
+// ✅ EXERCÍCIO 6B: Analisar Últimos 20 Comentários da BD
+export async function analyzeLatestComments() {
+  const response = await fetch(
+    `${API_BASE_URL}/exercises/dashboard/sentiment/latest`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    },
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || "Erro ao analisar últimos comentários");
   }
 
   return response.json();

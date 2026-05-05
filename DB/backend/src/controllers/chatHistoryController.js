@@ -22,7 +22,16 @@ export const getChatHistoryById = async (req, res) => {
   }
 };
 
-/* Função para criar mensagem de chat */
+export const getChatHistoryByConversationId = async (req, res) => {
+  try {
+    const conversationId = Number(req.params.conversationId);
+    const chatHistories = await chatHistoryService.getChatHistoryByConversationId(conversationId);
+    res.json(chatHistories);
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao buscar histórico da conversa" });
+  }
+};
+
 export const createChatHistory = async (req, res) => {
   try {
     const { conversation_id, role_id, content } = req.body;

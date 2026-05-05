@@ -1,14 +1,14 @@
 import { useTheme } from "@/context/ThemeContext";
 
-export default function HeaderUI({ onNewChat, onToggleHistory }) {
+export default function HeaderUI({ onNewChat, onToggleHistory, onToggleSidebar }) {
   const { theme, toggleTheme } = useTheme();
 
   return (
     <header className="h-14 flex items-center justify-end px-4 shrink-0 bg-transparent">
       <div className="flex items-center gap-1">
-        {/* 1. Ícone de Histórico */}
+        {/* 1. Ícone de Histórico - Abre sidebar com conversas */}
         <button
-          onClick={onToggleHistory}
+          onClick={onToggleSidebar}
           className={`p-2 rounded-lg transition-colors ${theme === "dark" ? "hover:bg-white/10 text-[#b4b4b4]" : "hover:bg-black/10 text-gray-600"}`}
         >
           <svg

@@ -31,3 +31,19 @@ export const getSentimentDashboardFromDB = async (req, res) => {
     });
   }
 };
+
+// 🚀 EXERCÍCIO 6B: Análise dos Últimos 20 Comentários
+export const analyzeLatestComments = async (req, res) => {
+  try {
+    const result = await aiService.analyzeLatestComments();
+    
+    res.json({ 
+      success: true,
+      result
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      error: `Erro ao analisar últimos comentários: ${error.message}` 
+    });
+  }
+};

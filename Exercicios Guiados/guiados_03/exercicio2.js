@@ -1,67 +1,80 @@
 /**
  * Exercício 2: Smart Task Parser (NLP para JSON)
- * Implementado com Zod v4 (Nativo) e Gemini
+ * Corrigido para SDK Oficial e Gemini 2.0 Flash
  */
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import * as z from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import dotenv from "dotenv";
 
+// 1. Configuração do Ambiente
 dotenv.config({ path: "../../.env" });
 
-const genAI = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-});
+// Debug para confirmar se a chave está a ser lida
+if (!process.env.GEMINI_API_KEY) {
+  console.error("❌ Erro: GEMINI_API_KEY não encontrada no ficheiro .env");
+}
 
-// 1. Definir o Schema com Zod v4
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// 2. Definição do Schema Zod
 const TaskSchema = z.object({
-  title: z.string(),
-  due_date: z.string(),
+  title: z.string().min(1, "O título é obrigatório"),
+  due_date: z.string(), // Formato ISO solicitado no guia
   priority: z.enum(["urgent", "high", "normal", "low"]),
   department: z.enum(["design", "dev", "marketing"]),
 });
 
-// 2. No Zod v4, o método é nativo da instância do schema
-const schema = TaskSchema.toJSONSchema();
+// 3. Conversão para JSON Schema para o Gemini
+const jsonSchema = zodToJsonSchema(TaskSchema);
 
+// 4. Inicialização do Modelo (Recomendado: gemini-2.5-flash-lite para JSON estável)
+const model = genAI.getGenerativeModel({
+  model: "gemini-2.5-flash-lite",
+});
+
+/**
+ * Função principal para processar linguagem natural
+ */
 export async function parseTaskFromNaturalLanguage(userMessage) {
   try {
-    // 3. Chamada ao Gemini seguindo a sintaxe solicitada
-    const result = await genAI.models.generateContent({
-      model: "gemini-2.5-flash-lite", // Verifique se esta versão está disponível no seu SDK
+    const today = new Date().toISOString().split('T')[0];
+
+    const result = await model.generateContent({
       contents: [
         {
           role: "user",
           parts: [
             {
-              text: `Extraia os dados da tarefa desta mensagem: "${userMessage}"`,
+              text: `Hoje é dia ${today}. Extrai os dados da tarefa desta mensagem: "${userMessage}".
+              Instruções:
+              - 'title': Resumo curto da tarefa.
+              - 'due_date': Data no formato ISO (YYYY-MM-DD).
+              - 'priority' e 'department': Escolha as opções mais adequadas do schema.`,
             },
           ],
         },
       ],
       generationConfig: {
-        temperature: 0.1,
+        temperature: 0.1, // Baixa temperatura para maior precisão
         responseMimeType: "application/json",
-        responseJsonSchema: schema, // O Zod v4 gera o schema compatível aqui
+        responseJsonSchema: jsonSchema,
       },
     });
 
     const responseText = result.response.text();
-    console.log("Resposta bruta do GenAI:", responseText);
+    
+    // Parse e Validação com Zod
+    const parsedData = JSON.parse(responseText);
+    const validatedTask = TaskSchema.parse(parsedData);
 
-    // 4. Parse do JSON e Validação Final
-    const parsed = JSON.parse(responseText);
-
-    // O .parse() do Zod garante que os dados seguem o contrato definido
-    const validatedTask = TaskSchema.parse(parsed);
-
-    console.log("Resposta validada com Zod:", validatedTask);
     return validatedTask;
+
   } catch (error) {
-    // Tratamento de erros de parsing ou validação do Zod
     if (error instanceof z.ZodError) {
-      console.error("❌ Erro de Validação Zod:", error.errors);
+      console.error("❌ Erro de Estrutura (Zod):", JSON.stringify(error.errors, null, 2));
     } else {
-      console.error("❌ Erro no Parser:", error.message);
+      console.error("❌ Erro na API Gemini:", error.message);
     }
     throw error;
   }

@@ -219,7 +219,7 @@ export const LABS_DATA = {
           title: "Dashboard de Sentimento",
           badge: "JSON",
           description: "Analise a saúde da equipa",
-          placeholder: "...",
+          placeholder: "Escreva comentários da equipa... Ex: A sprint está pesada, adorei o novo design, servidor caiu novamente...",
           action: getSentimentDashboard,
         },
       ],

@@ -332,8 +332,10 @@ export function mapTeamStatsDTOResponse(data) {
 export function mapChatHistoryDTOResponse(data) {
   return {
     id: data.id,
+    conversation_id: data.conversation_id,
+    role_id: data.role_id,
     content: data.content,
-    created_at: data.created_at,
+    sent_at: data.sent_at,
   };
 }
 
@@ -344,13 +346,15 @@ export function mapConversationDTOResponse(data) {
     title: data.title,
     created_at: data.created_at,
   };
-} 
+}
 
 // Função para mapear resposta de resumo de reunião
 export function mapMeetingSummaryDTOResponse(data) {
   return {
     id: data.id,
-    content: data.content,
+    project_id: data.project_id,
+    original_text: data.original_text,
+    summary: data.summary,
     created_at: data.created_at,
   };
 }
@@ -359,12 +363,11 @@ export function mapMeetingSummaryDTOResponse(data) {
 export function mapTicketDTOResponse(data) {
   return {
     id: data.id,
-    title: data.title,
-    description: data.description,
-    status_id: data.status_id,
-    priority_id: data.priority_id,
+    user_report: data.user_report,
+    error_type: data.error_type,
+    severity: data.severity,
+    fix_suggestion: data.fix_suggestion,
+    status: data.status,
     created_at: data.created_at,
-    updated_at: data.updated_at,
   };
 }
-

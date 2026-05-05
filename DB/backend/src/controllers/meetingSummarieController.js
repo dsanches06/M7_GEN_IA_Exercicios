@@ -1,4 +1,4 @@
-import * as meetingSummarieService from "../services/meetingSummarieService.js";
+import * as meetingSummarieService from "../services/meetingSummaryService.js";
 
 /* Função para buscar resumos de reuniões */
 export const getMeetingSummaries = async (req, res) => {

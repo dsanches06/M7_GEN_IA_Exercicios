@@ -40,8 +40,9 @@ dotenv.config();
 app.use(express.json());
 app.use(
   cors({
-    origin: "http://localhost:5173",
-    credentials: true,
+    origin: "*", // Permitir todas as origens (ajuste conforme necessário para produção)
+    methods: ["GET", "POST", "PUT", "DELETE"], // Métodos permitidos
+    allowedHeaders: ["Content-Type", "Authorization"], // Cabeçalhos permitidos
   }),
 );
 app.use(express.urlencoded({ extended: true }));
@@ -89,9 +90,9 @@ app.use("/statistics/ranking", statisticsRoutes);
 app.use("/exercises", exercisesRoutes);
 
 // CRUD - Histórico de Chats e Conversas
-app.use("/chat_history", chatHistoryRoutes);
+app.use("/chat", chatHistoryRoutes);
 app.use("/conversations", conversationRoutes);
-app.use("/meeting_summaries", meetingSummarieRoutes);
+app.use("/meetingsummaries", meetingSummarieRoutes);
 app.use("/tickets", ticketRoutes);
 
 /* Iniciar o servidor */

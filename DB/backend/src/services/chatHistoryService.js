@@ -11,6 +11,11 @@ export const getChatHistoryById = async (chatHistoryId) => {
   return chatHistories.length > 0 ? mapChatHistoryDTOResponse(chatHistories[0]) : null;
 };
 
+export const getChatHistoryByConversationId = async (conversationId) => {
+  const [chatHistories] = await db.query("SELECT * FROM chat_history WHERE conversation_id = ? ORDER BY sent_at ASC", [conversationId]);
+  return chatHistories.map(mapChatHistoryDTOResponse);
+};
+
 export const createChatHistory = async (data) => {
   const { conversation_id, role_id, content } = data;
   const [result] = await db.query(

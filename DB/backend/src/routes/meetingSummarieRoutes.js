@@ -4,9 +4,9 @@ import * as meetingSummaryController from "../controllers/meetingSummarieControl
 const router = express.Router();
 
 // CRUD Padrão
-router.get("/list", meetingSummaryController.getMeetingSummaries);
+router.get("/", meetingSummaryController.getMeetingSummaries);
 router.get("/:id", meetingSummaryController.getMeetingSummaryById);
-router.post("/save", meetingSummaryController.createMeetingSummary);
+router.post("/", meetingSummaryController.createMeetingSummary);
 router.put("/:id", meetingSummaryController.updateMeetingSummary);
 router.delete("/:id", meetingSummaryController.deleteMeetingSummary);
 
