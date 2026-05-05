@@ -8,7 +8,7 @@ export const getAllChatHistory = async () => {
 
 export const getChatHistoryById = async (chatHistoryId) => {
   const [chatHistories] = await db.query("SELECT * FROM chat_history WHERE id = ?", [chatHistoryId]);
-  return chatHistories.length > 0 ? mapChatHistoryDTOResponse(chatHistories[0]) : null;
+  return chatHistories[0] ? mapChatHistoryDTOResponse(chatHistories[0]) : null;
 };
 
 export const getChatHistoryByConversationId = async (conversationId) => {
@@ -17,12 +17,11 @@ export const getChatHistoryByConversationId = async (conversationId) => {
 };
 
 export const createChatHistory = async (data) => {
-  const { conversation_id, role_id, content } = data;
   const [result] = await db.query(
     "INSERT INTO chat_history (conversation_id, role_id, content) VALUES (?, ?, ?)",
-    [conversation_id, role_id, content]
+    [data.conversation_id, data.role_id, data.content]
   );
-  return mapChatHistoryDTOResponse({ id: result.insertId, conversation_id, role_id, content, sent_at: new Date() });
+  return mapChatHistoryDTOResponse({ id: result.insertId, ...data, sent_at: new Date() });
 };
 
 export const updateChatHistory = async (id, data) => {

@@ -7,7 +7,7 @@ const router = express.Router();
 router.get("/", chatHistoryController.getChatHistories);
 router.get("/conversation/:conversationId", chatHistoryController.getChatHistoryByConversationId);
 router.get("/:id", chatHistoryController.getChatHistoryById);
-router.post("/save", chatHistoryController.createChatHistory);
+router.post("/", chatHistoryController.createChatHistory);
 router.put("/:id", chatHistoryController.updateChatHistory);
 router.delete("/:id", chatHistoryController.deleteChatHistory);
 

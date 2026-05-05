@@ -14,23 +14,6 @@ export const getTicketById = async (ticketId) => {
 };
 
 export const createTicket = async (data) => {
-  const { user_report, error_type, severity, fix_suggestion, status } = data;
-  const [result] = await db.query(
-    "INSERT INTO tickets (user_report, error_type, severity, fix_suggestion, status) VALUES (?, ?, ?, ?, ?)",
-    [user_report, error_type, severity, fix_suggestion, status || "open"],
-  );
-  return mapTicketDTOResponse({
-    id: result.insertId,
-    user_report,
-    error_type,
-    severity,
-    fix_suggestion,
-    status: status || "open",
-    created_at: new Date(),
-  });
-};
-
-export const createUser = async (data) => {
   const [result] = await db.query(
     "INSERT INTO tickets (user_report, error_type, severity, fix_suggestion, status) VALUES (?, ?, ?, ?, ?)",
     [
@@ -41,7 +24,10 @@ export const createUser = async (data) => {
       data.status || "open",
     ],
   );
-  return mapTicketDTOResponse({ id: result.insertId, ...data });
+  return mapTicketDTOResponse({
+    id: result.insertId,
+    ...data,
+  });
 };
 
 export const updateTicket = async (id, data) => {

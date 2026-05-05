@@ -4,7 +4,7 @@
  * Integrado com Services da Database
  */
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { z } from "zod";
 import * as chatHistoryService from "./chatHistoryService.js";
 import * as conversationService from "./conversationService.js";
@@ -12,10 +12,13 @@ import * as meetingSummaryService from "./meetingSummaryService.js";
 import * as ticketService from "./ticketService.js";
 import * as commentService from "./commentService.js";
 import dotenv from "dotenv";
+import zodToJsonSchema from "zod-to-json-schema";
 dotenv.config({ path: "../../.env" });
 
-const genAI = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+const model = genAI.getGenerativeModel({
+  model: "gemini-3-flash-preview",
 });
 
 // ============================================================
@@ -43,11 +46,13 @@ export async function chatSuportWithStream(userMessage, req, res) {
       }
     }
 
+    let chat_history =
+      await chatHistoryService.getChatHistoryByConversationId(conversationId);
+
     let fullResponse = "";
 
     // 1️⃣ Gerar resposta do bot via stream
-    const result = await genAI.models.generateContentStream({
-      model: "gemini-2.5-flash-lite",
+    const result = await model.generateContentStream({
       contents: [
         {
           role: "user",
@@ -58,6 +63,7 @@ export async function chatSuportWithStream(userMessage, req, res) {
           ],
         },
       ],
+      history: chat_history || [],
       generationConfig: { temperature: 0.4 },
     });
 
@@ -72,12 +78,11 @@ export async function chatSuportWithStream(userMessage, req, res) {
     console.log("[DONE] Chat support concluído");
 
     // 2️⃣ Gerar título inteligente baseado na resposta (apenas se nova conversa)
-    let dynamicTitle = `Chat Support - ${new Date().toISOString().split('T')[0]}`;
-    
+    let dynamicTitle = `Chat Support - ${new Date().toISOString().split("T")[0]}`;
+
     if (!conversationId) {
       try {
-        const titleResult = await genAI.models.generateContent({
-          model: "gemini-2.5-flash-lite",
+        const titleResult = await model.generateContent({
           contents: [
             {
               role: "user",
@@ -85,10 +90,10 @@ export async function chatSuportWithStream(userMessage, req, res) {
                 {
                   text: `Analisa esta conversa de suporte e gera um título curto (máx 50 caracteres) que resuma o tema:
                   
-Pergunta do user: "${userMessage}"
-Resposta do bot: "${fullResponse.substring(0, 500)}"
+                  Pergunta do user: "${userMessage}"
+                  Resposta do bot: "${fullResponse.substring(0, 500)}"
 
-Responde APENAS com o título, sem explicações.`,
+                  Responde APENAS com o título, sem explicações.`,
                 },
               ],
             },
@@ -109,7 +114,10 @@ Responde APENAS com o título, sem explicações.`,
         }
         console.log("✅ Título gerado:", dynamicTitle);
       } catch (titleError) {
-        console.warn("⚠️ Erro ao gerar título, usando padrão:", titleError.message);
+        console.warn(
+          "⚠️ Erro ao gerar título, usando padrão:",
+          titleError.message,
+        );
       }
     }
 
@@ -166,8 +174,7 @@ const TaskSchema = z.object({
 
 export async function parseTaskFromNaturalLanguage(userMessage) {
   try {
-    const result = await genAI.models.generateContent({
-      model: "gemini-2.5-flash-lite",
+    const result = await model.generateContent({
       contents: [
         {
           role: "user",
@@ -183,26 +190,42 @@ export async function parseTaskFromNaturalLanguage(userMessage) {
       generationConfig: {
         temperature: 0.1,
         responseMimeType: "application/json",
-        responseJsonSchema: z.toJSONSchema(TaskSchema),
+        responseJsonSchema: zodToJsonSchema(TaskSchema),
       },
     });
 
-    // ✅ CORRIGIDO: Tentar múltiplas formas de aceder à resposta
-    let responseText;
-    if (typeof result.text === "function") {
-      responseText = result.text();
-    } else if (result.candidates && result.candidates[0]) {
-      responseText = result.candidates[0].content.parts[0].text;
-    } else if (result.response && result.response.text) {
-      responseText = result.response.text;
-    } else {
-      responseText = result.text || JSON.stringify(result);
+    let responseText = "";
+
+    try {
+      // Try the standard helper method first
+      if (result.response && typeof result.response.text === "function") {
+        responseText = result.response.text();
+      }
+      // Fallback: Deep dive into the candidates array
+      else if (result.response?.candidates?.[0]?.content?.parts?.[0]?.text) {
+        responseText = result.response.candidates[0].content.parts[0].text;
+      }
+      // Fallback: Check if result itself has the text (older versions)
+      else if (typeof result.text === "function") {
+        responseText = result.text();
+      } else {
+        // If it's already an object/string, stringify or use as is
+        responseText =
+          typeof result === "string" ? result : JSON.stringify(result);
+      }
+    } catch (e) {
+      console.error("Critical error reading response structure:", e);
+      throw new Error("Could not read response from AI model.");
     }
 
-    // Limpar prefácios em português/outras línguas
-    responseText = responseText.replace(/^[\s\S]*?({)/, "$1").trim();
+    console.log("Raw model response:", responseText);
 
-    const parsed = JSON.parse(responseText);
+    // Ensure responseText is treated as a string before replacing
+    const cleanText = String(responseText)
+      .replace(/^[\s\S]*?({)/, "$1")
+      .trim();
+
+    const parsed = JSON.parse(cleanText);
     return TaskSchema.parse(parsed);
   } catch (error) {
     console.error("❌ Erro ao parsear tarefa:", error.message);
@@ -247,8 +270,7 @@ Gere um sumário que inclua:
 4. Riscos ou preocupações identificadas
     `;
 
-    const result = await genAI.models.generateContentStream({
-      model: "gemini-2.5-flash-lite",
+    const result = await model.generateContentStream({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
 
@@ -296,16 +318,21 @@ Gere um sumário que inclua:
 // EXERCÍCIO 3B: Transcrição de Áudio com Stream
 // ============================================================
 
-export async function transcribeAudioWithStream(audioBuffer, mimeType, projectId, req, res) {
+export async function transcribeAudioWithStream(
+  audioBuffer,
+  mimeType,
+  projectId,
+  req,
+  res,
+) {
   try {
     console.log("🎤 Transcrevendo áudio...");
-    
+
     // 1. Converter buffer para base64
     const base64Audio = audioBuffer.toString("base64");
 
     // 2. Transcrever áudio com Gemini
-    const result = await genAI.models.generateContent({
-      model: "gemini-2.5-flash-lite",
+    const result = await model.generateContent({
       contents: [
         {
           role: "user",
@@ -344,7 +371,7 @@ export async function transcribeAudioWithStream(audioBuffer, mimeType, projectId
     const chunks = responseText.match(/[\s\S]{1,100}/g) || [responseText];
     for (const chunk of chunks) {
       res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
     }
     res.write("data: [DONE]\n\n");
     res.end();
@@ -371,8 +398,7 @@ const BugTriageSchema = z.object({
 
 export async function triageBugReport(errorReport) {
   try {
-    const result = await genAI.models.generateContent({
-      model: "gemini-2.5-flash-lite",
+    const result = await model.generateContent({
       contents: [
         {
           role: "user",
@@ -392,7 +418,7 @@ export async function triageBugReport(errorReport) {
       generationConfig: {
         temperature: 0.1,
         responseMimeType: "application/json",
-        responseJsonSchema: z.toJSONSchema(BugTriageSchema),
+        responseJsonSchema: zodToJsonSchema(BugTriageSchema),
       },
     });
 
@@ -495,12 +521,11 @@ Formato do JSON:
 [JSON_START]
     `;
 
-    const result = await genAI.models.generateContentStream({
-      model: "gemini-2.5-flash-lite",
+    const result = await model.generateContentStream({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
         responseMimeType: "application/json",
-        responseJsonSchema: z.toJSONSchema(WeeklyAgendaSchema),
+        responseJsonSchema: zodToJsonSchema(WeeklyAgendaSchema),
       },
     });
 
@@ -564,8 +589,14 @@ const SentimentDashboardSchema = z.object({
 export async function analyzeTeamSentiment(userInput) {
   try {
     // Validar input
-    if (!userInput || typeof userInput !== "string" || userInput.trim().length === 0) {
-      throw new Error("É necessário fornecer comentários ou feedback da equipa.");
+    if (
+      !userInput ||
+      typeof userInput !== "string" ||
+      userInput.trim().length === 0
+    ) {
+      throw new Error(
+        "É necessário fornecer comentários ou feedback da equipa.",
+      );
     }
 
     const prompt = `Analise o sentimento e bem-estar da equipa com base nos seguintes comentários e retorne um JSON estruturado:
@@ -575,8 +606,7 @@ ${userInput}
 
 Retorne APENAS JSON (sem explicações adicionais):`;
 
-    const result = await genAI.models.generateContent({
-      model: "gemini-2.5-flash-lite",
+    const result = await model.generateContent({
       contents: [
         {
           role: "user",
@@ -590,26 +620,36 @@ Retorne APENAS JSON (sem explicações adicionais):`;
       generationConfig: {
         temperature: 0.2,
         responseMimeType: "application/json",
-        responseJsonSchema: z.toJSONSchema(SentimentDashboardSchema),
+        responseJsonSchema: zodToJsonSchema(SentimentDashboardSchema),
       },
     });
 
-    // ✅ CORRIGIDO: Acessar a estrutura correta
-    let responseText;
-    if (typeof result.text === "function") {
-      responseText = result.text();
-    } else if (result.candidates && result.candidates[0]) {
-      responseText = result.candidates[0].content.parts[0].text;
-    } else if (result.response && result.response.text) {
-      responseText = result.response.text;
-    } else {
-      responseText = result.text || JSON.stringify(result);
+    // 4️⃣ Extrair resposta (Standardized for Gemini SDK)
+    let responseText = "";
+
+    try {
+      // The most reliable way in recent SDK versions
+      if (result.response && typeof result.response.text === "function") {
+        responseText = result.response.text();
+      }
+      // Manual path traversal if .text() is unavailable
+      else if (result.response?.candidates?.[0]?.content?.parts?.[0]?.text) {
+        responseText = result.response.candidates[0].content.parts[0].text;
+      } else {
+        // Final fallback: stringify whatever we got to avoid .replace() errors
+        responseText =
+          typeof result.text === "string"
+            ? result.text
+            : JSON.stringify(result);
+      }
+    } catch (e) {
+      throw new Error("Falha ao extrair texto do Gemini: " + e.message);
     }
 
-    // Limpar prefácios
-    responseText = responseText.replace(/^[\s\S]*?({)/, "$1").trim();
+    // Now safe to use .replace because responseText is guaranteed to be a string
+    const cleanJson = responseText.replace(/^[\s\S]*?({)/, "$1").trim();
 
-    const parsed = JSON.parse(responseText);
+    const parsed = JSON.parse(cleanJson);
     const dashboard = SentimentDashboardSchema.parse(parsed);
 
     const moodEmoji = { happy: "😊", stressed: "😰", neutral: "😐" };
@@ -658,8 +698,7 @@ Comentários:
 Retorne APENAS JSON (sem explicações adicionais):`;
 
     // 3️⃣ Enviar para Gemini com schema
-    const result = await genAI.models.generateContent({
-      model: "gemini-2.5-flash-lite",
+    const result = await model.generateContent({
       contents: [
         {
           role: "user",
@@ -669,33 +708,48 @@ Retorne APENAS JSON (sem explicações adicionais):`;
       generationConfig: {
         temperature: 0.2,
         responseMimeType: "application/json",
-        responseJsonSchema: z.toJSONSchema(SentimentDashboardSchema),
+        responseJsonSchema: zodToJsonSchema(SentimentDashboardSchema),
       },
     });
 
-    // 4️⃣ Extrair resposta
-    let responseText;
-    if (typeof result.text === "function") {
-      responseText = result.text();
-    } else if (result.candidates && result.candidates[0]) {
-      responseText = result.candidates[0].content.parts[0].text;
-    } else if (result.response && result.response.text) {
-      responseText = result.response.text;
-    } else {
-      responseText = result.text || JSON.stringify(result);
+    // 4️⃣ Extrair resposta (Standardized for Gemini SDK)
+    let responseText = "";
+
+    try {
+      // The most reliable way in recent SDK versions
+      if (result.response && typeof result.response.text === "function") {
+        responseText = result.response.text();
+      }
+      // Manual path traversal if .text() is unavailable
+      else if (result.response?.candidates?.[0]?.content?.parts?.[0]?.text) {
+        responseText = result.response.candidates[0].content.parts[0].text;
+      } else {
+        // Final fallback: stringify whatever we got to avoid .replace() errors
+        responseText =
+          typeof result.text === "string"
+            ? result.text
+            : JSON.stringify(result);
+      }
+    } catch (e) {
+      throw new Error("Falha ao extrair texto do Gemini: " + e.message);
     }
 
-    responseText = responseText.replace(/^[\s\S]*?({)/, "$1").trim();
+    // Now safe to use .replace because responseText is guaranteed to be a string
+    const cleanJson = responseText.replace(/^[\s\S]*?({)/, "$1").trim();
 
-    const parsed = JSON.parse(responseText);
+    const parsed = JSON.parse(cleanJson);
     const dashboard = SentimentDashboardSchema.parse(parsed);
 
-    console.log(`\n📊 Análise dos Últimos 20 Comentários (${lastTwenty.length} comentários):`);
+    console.log(
+      `\n📊 Análise dos Últimos 20 Comentários (${lastTwenty.length} comentários):`,
+    );
     console.log(
       `${dashboard.team_mood === "happy" ? "😊" : dashboard.team_mood === "stressed" ? "😰" : "😐"} Estado da Equipa: ${dashboard.team_mood.toUpperCase()}`,
     );
     console.log(`⚠️ Principal Bloqueador: ${dashboard.main_blocker}`);
-    console.log(`🔴 Risco de Burnout: ${dashboard.burnout_risk ? "SIM" : "NÃO"}`);
+    console.log(
+      `🔴 Risco de Burnout: ${dashboard.burnout_risk ? "SIM" : "NÃO"}`,
+    );
     console.log("📋 Recomendações:");
     dashboard.recommendations.forEach((rec, i) =>
       console.log(`  ${i + 1}. ${rec}`),
